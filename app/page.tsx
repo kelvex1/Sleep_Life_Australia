@@ -97,7 +97,7 @@ export default function HomePage() {
 
             <div className="relative h-[400px] sm:h-[500px] lg:h-[600px] rounded-3xl overflow-hidden shadow-xl">
               <Image
-                src="/chatgpt_image_dec_31,_2025,_12_27_30_pm.png"
+                src="/Sleep_Life_Australia_-_Home_page copy.png"
                 alt="Sleep well with Sleep Life Australia"
                 fill
                 className="object-cover opacity-70"
