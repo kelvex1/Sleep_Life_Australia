@@ -55,15 +55,15 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen bg-white">
       <AnimatedBackground />
-      <section className="relative bg-transparent min-h-screen flex items-center pt-24 md:pt-28">
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 py-12">
+      <section className="relative bg-transparent min-h-screen flex items-center pt-16 md:pt-20">
+        <div className="container relative z-10 mx-auto px-4 sm:px-6 py-8">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-7xl mx-auto">
             <div className="text-left space-y-6 lg:space-y-8">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-brand-blue-light leading-tight">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-brand-blue-light leading-tight">
                 We make you better in bed
               </h1>
 
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-brand-blue-light leading-relaxed">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-brand-blue-light leading-relaxed">
                 Sleep well, live well with the support of Perth's sleep apnoea experts.
               </h2>
 
@@ -95,12 +95,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative h-[400px] sm:h-[500px] lg:h-[600px] rounded-3xl overflow-hidden shadow-xl">
+            <div className="relative h-[500px] sm:h-[600px] lg:h-[700px] rounded-3xl overflow-hidden shadow-2xl">
               <Image
                 src="/Sleep_Life_Australia_-_Home_page copy.png"
                 alt="Sleep well with Sleep Life Australia"
                 fill
-                className="object-cover opacity-70"
+                className="object-cover"
                 priority
                 fetchPriority="high"
                 sizes="(max-width: 1024px) 100vw, 50vw"
