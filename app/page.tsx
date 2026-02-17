@@ -244,13 +244,12 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-3 gap-0">
               <div className="relative h-full min-h-[400px] lg:min-h-[600px]">
                 <Image
-                  src="/hero-image.png"
+                  src="/Sleep_Life_Australia_-_Home_page.png"
                   alt="Person waking up refreshed and stretching in bed"
                   fill
                   className="object-cover"
                   quality={90}
                   sizes="(max-width: 1024px) 100vw, 33vw"
-                  priority
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white/10"></div>
               </div>
