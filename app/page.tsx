@@ -2,15 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Home, Waves, Clock, Calendar, Users, ArrowRight, Stethoscope, MessageCircle, Volume2, HelpCircle, Heart, ClipboardList } from 'lucide-react';
-
-const AnimatedBackground = dynamic(() => import('@/components/AnimatedBackground').then(mod => ({ default: mod.AnimatedBackground })), {
-  ssr: false,
-  loading: () => <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-blue-100" />
-});
+import { AnimatedBackground } from '@/components/AnimatedBackground';
 
 export default function HomePage() {
   const services = [
@@ -18,19 +13,19 @@ export default function HomePage() {
       icon: Home,
       title: 'At-Home Sleep Studies',
       description: 'Sleep studies conducted in the comfort of your own home. Professional equipment and expert analysis.',
-      features: ['Sleep in your own bed', 'Medicare-recognised testing', 'Clear, comprehensive reports']
+      features: ['Home-based comfort', 'Professional equipment', 'Comprehensive reports']
     },
     {
       icon: Waves,
       title: 'CPAP Therapy & Support',
-      description: 'Personalised CPAP therapy with expert fitting, education, and ongoing support.',
-      features: ['Individualised equipment selection', 'Expert mask fitting and education', 'Ongoing care and follow-up support']
+      description: 'Complete CPAP therapy solutions with ongoing support, equipment, and regular follow-ups to ensure treatment success.',
+      features: ['Latest equipment', 'Expert fitting', 'Ongoing support']
     },
     {
       icon: Activity,
       title: 'Sleep Consultations',
-      description: 'Comprehensive sleep health assessments with experienced clinicians to identify sleep concerns and guide appropriate treatment.',
-      features: ['Thorough clinical assessment', 'Personalised care plans', 'Ongoing follow-up and support']
+      description: 'Comprehensive sleep health assessments with experienced technician to diagnose and treat various sleep disorders.',
+      features: ['Expert diagnosis', 'Personalized plans', 'Follow-up care']
     }
   ];
 
@@ -38,41 +33,38 @@ export default function HomePage() {
     {
       icon: Clock,
       title: 'Fast Appointments',
-      description: 'Get timely access to sleep studies and consultations, without long waiting times.'
+      description: 'Quick access to sleep studies and consultations'
     },
     {
       icon: Calendar,
-      title: 'Easy Online Booking',
-      description: 'Book your appointment online anytime, with clear next steps and local support when you need it.'
+      title: 'Online Booking',
+      description: 'Convenient online appointment scheduling available 24/7'
     },
     {
       icon: Users,
-      title: 'A Dedicated Clinical Team',
-      description: 'Our experienced sleep scientists, clinicians, and technicians work together to support your care, from diagnosis through to ongoing management.'
+      title: 'Our clinical team',
+      description: 'Qualified sleep scientists, clinicians, and technicians working together in sleep apnoea care'
     }
   ];
 
   return (
     <div className="relative min-h-screen bg-white">
       <AnimatedBackground />
-      <section className="relative bg-transparent min-h-screen flex items-center pt-16 md:pt-20">
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 py-8">
+      <section className="relative bg-transparent min-h-screen flex items-center">
+        <div className="container relative z-10 mx-auto px-4 sm:px-6 py-24">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-7xl mx-auto">
             <div className="text-left space-y-6 lg:space-y-8">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-brand-blue-light leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-brand-blue-light leading-tight">
                 We make you better in bed
               </h1>
 
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light text-brand-blue-light leading-relaxed">
-                Sleep well, live well with the support of Perth's sleep apnoea experts.
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light text-brand-blue-light leading-relaxed">
+                Sleep well, live well with the support of Perth's sleep apnea experts.
               </h2>
 
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
-                <h3 className="text-2xl font-semibold text-brand-blue mb-3">Sleep Apnoea can be exhausting:</h3>
-                <p className="text-base sm:text-lg text-brand-blue-light leading-relaxed">
-                  From your first assessment through to education and ongoing personalised support, we help you manage sleep apnoea so you can feel rested, clearer, and back to feeling like you.
-                </p>
-              </div>
+              <p className="text-base sm:text-lg text-brand-blue-light leading-relaxed">
+                We support people with sleep apnoea through assessment, sleep studies, therapy, education, and ongoing care.
+              </p>
 
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Link href="/book">
@@ -95,14 +87,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative h-[500px] sm:h-[600px] lg:h-[700px] rounded-3xl overflow-hidden shadow-2xl">
+            <div className="relative h-[400px] sm:h-[500px] lg:h-[600px] rounded-3xl overflow-hidden shadow-xl">
               <Image
-                src="/Sleep_Life_Australia_-_Home_page copy.png"
+                src="/chatgpt_image_dec_31,_2025,_12_27_30_pm.png"
                 alt="Sleep well with Sleep Life Australia"
                 fill
-                className="object-cover"
+                className="object-cover opacity-70"
                 priority
-                fetchPriority="high"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -110,8 +101,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative py-12 sm:py-16 md:py-24 px-4 sm:px-6 bg-blue-50">
+      <section className="relative py-12 sm:py-16 md:py-24 px-4 sm:px-6 bg-gray-50">
         <div className="container mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-blue mb-4">Your Journey to Better Sleep</h2>
+            <p className="text-lg sm:text-xl text-brand-blue-light max-w-2xl mx-auto px-4">
+              Follow our simple 3-step process to transform your sleep and improve your quality of life
+            </p>
+          </div>
+
           <div className="max-w-4xl mx-auto mb-12">
             <div className="bg-gradient-to-br from-brand-blue-light to-brand-blue rounded-2xl p-8 shadow-2xl border-2 border-brand-blue-light hover:shadow-3xl transition-all duration-300 hover:-translate-y-1">
               <div className="flex flex-col md:flex-row items-center gap-6">
@@ -119,8 +117,8 @@ export default function HomePage() {
                   <ClipboardList className="w-10 h-10 text-brand-blue-light" />
                 </div>
                 <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-2xl font-bold text-white mb-2">Not Sure If You Have Sleep Apnoea?</h3>
-                  <p className="text-white/90 text-lg mb-4">Take our quick 60 second assessment to find out your risk level</p>
+                  <h3 className="text-2xl font-bold text-white mb-2">Not Sure If You Have Sleep Apnea?</h3>
+                  <p className="text-white/90 text-lg mb-4">Take our quick 2-minute assessment to find out your risk level</p>
                   <div className="flex flex-wrap gap-2 justify-center md:justify-start text-sm text-white/80">
                     <span className="flex items-center gap-1">
                       <div className="w-1.5 h-1.5 bg-white/60 rounded-full"></div>
@@ -149,73 +147,50 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-blue mb-4">Your Journey to Better Sleep</h2>
-            <p className="text-lg sm:text-xl text-brand-blue-light max-w-2xl mx-auto px-4">
-              Follow our simple 3-step process to transform your sleep and improve your quality of life
-            </p>
-          </div>
-
           <div className="max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
-              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300 h-full">
+              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-12 h-12 bg-brand-blue-light rounded-full flex items-center justify-center text-white font-semibold text-xl shadow-md">
                   1
                 </div>
-                <div className="mt-6 text-center flex flex-col h-full">
+                <div className="mt-6 text-center">
                   <div className="w-16 h-16 bg-brand-blue-light/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Stethoscope className="w-8 h-8 text-brand-blue-light" />
                   </div>
-                  <h3 className="text-lg font-semibold text-brand-blue mb-3">Visit Your GP</h3>
-                  <p className="text-sm text-brand-blue-light leading-relaxed mb-4 flex-grow">Discuss your sleep concerns with your GP and request a referral. Ask your GP to send the referral directly to us (<a href="mailto:reception@sleeplifeaustralia.com.au" className="text-brand-blue hover:underline">reception@sleeplifeaustralia.com.au</a>), or download the form to take with you.</p>
-                  <a href="/referral_(1).pdf" download>
-                    <Button
-                      size="sm"
-                      className="bg-brand-blue-light hover:bg-brand-blue text-white font-semibold w-full min-h-[44px] touch-manipulation"
-                    >
-                      Download GP Referral Form
-                    </Button>
-                  </a>
+                  <h3 className="text-lg font-semibold text-brand-blue mb-3">Visit Your GP and Send Referral</h3>
+                  <p className="text-sm text-brand-blue-light leading-relaxed">Have your GP complete a referral and send it to us</p>
                 </div>
               </div>
 
-              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300 h-full">
+              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-12 h-12 bg-brand-blue-light rounded-full flex items-center justify-center text-white font-semibold text-xl shadow-md">
                   2
                 </div>
-                <div className="mt-6 text-center flex flex-col h-full">
+                <div className="mt-6 text-center">
                   <div className="w-16 h-16 bg-brand-blue-light/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Clock className="w-8 h-8 text-brand-blue-light" />
                   </div>
-                  <h3 className="text-lg font-semibold text-brand-blue mb-3">Upload Your Referral</h3>
-                  <p className="text-sm text-brand-blue-light leading-relaxed mb-4 flex-grow">Already have a completed referral? Upload it here and our team will be in touch within 7 days to organise your sleep test.</p>
-                  <Link href="/referral">
-                    <Button
-                      size="sm"
-                      className="bg-brand-blue-light hover:bg-brand-blue text-white font-semibold w-full min-h-[44px] touch-manipulation"
-                    >
-                      Upload Referral
-                    </Button>
-                  </Link>
+                  <h3 className="text-lg font-semibold text-brand-blue mb-3">7 Day Processing Time</h3>
+                  <p className="text-sm text-brand-blue-light leading-relaxed">Book your sleep test 7 days after Referral sent</p>
                 </div>
               </div>
 
-              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300 h-full">
+              <div className="relative bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all duration-300">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-12 h-12 bg-brand-blue-light rounded-full flex items-center justify-center text-white font-semibold text-xl shadow-md">
                   3
                 </div>
-                <div className="mt-6 text-center flex flex-col h-full">
+                <div className="mt-6 text-center">
                   <div className="w-16 h-16 bg-brand-blue-light/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Calendar className="w-8 h-8 text-brand-blue-light" />
                   </div>
-                  <h3 className="text-lg font-semibold text-brand-blue mb-3">Book Your Sleep Test</h3>
-                  <p className="text-sm text-brand-blue-light leading-relaxed mb-4 flex-grow">Ready to move forward? Book your sleep test online now at a time that suits you.</p>
+                  <h3 className="text-lg font-semibold text-brand-blue mb-3">Book Online and Take Your Sleep Test</h3>
+                  <p className="text-sm text-brand-blue-light leading-relaxed mb-4">Schedule your convenient appointment</p>
                   <Link href="/book">
                     <Button
                       size="sm"
                       className="bg-brand-blue-light hover:bg-brand-blue text-white font-semibold w-full min-h-[44px] touch-manipulation"
                     >
-                      Book Sleep Test Now
+                      BOOK SLEEP TEST
                     </Button>
                   </Link>
                 </div>
@@ -225,7 +200,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="chat-katie" className="relative py-24 px-6 bg-blue-50">
+      <section id="chat-katie" className="relative py-24 px-6 bg-gray-50">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-blue-light bg-white mb-6">
@@ -244,8 +219,8 @@ export default function HomePage() {
             <div className="grid lg:grid-cols-3 gap-0">
               <div className="relative h-full min-h-[400px] lg:min-h-[600px]">
                 <Image
-                  src="/Sleep_Life_Australia_-_Home_page.png"
-                  alt="Person waking up refreshed and stretching in bed"
+                  src="/screenshot_2025-12-19_at_1.09.32_pm.png"
+                  alt="Katie AI Sleep Expert"
                   fill
                   className="object-cover"
                   quality={90}
@@ -269,7 +244,7 @@ export default function HomePage() {
                   Katie can answer your questions about Sleep Life Australia, sleep therapy treatments, and sleep studies. She speaks to you with clear audio guidance, making it easy to get information while multitasking.
                 </p>
 
-                <div className="bg-blue-100 rounded-lg p-3 mb-6">
+                <div className="bg-gray-50 rounded-lg p-3 mb-6">
                   <div className="flex items-start gap-2">
                     <Volume2 className="w-5 h-5 text-brand-blue-light mt-0.5 flex-shrink-0" />
                     <div>
@@ -302,7 +277,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="p-8 lg:p-10 bg-blue-100 border-l flex flex-col justify-center">
+              <div className="p-8 lg:p-10 bg-gray-50 border-l flex flex-col justify-center">
                 <h4 className="text-lg font-semibold text-brand-blue mb-5">Katie Can Help You With:</h4>
 
                 <div className="space-y-3">
@@ -360,12 +335,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="sleep-studies" className="relative py-24 px-6 bg-white scroll-mt-24">
+      <section id="sleep-studies" className="relative py-24 px-6 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-semibold text-brand-blue mb-4">Our Services</h2>
             <p className="text-xl text-brand-blue-light max-w-2xl mx-auto leading-relaxed">
-              Comprehensive sleep health care combining clinical expertise, proven technology, and ongoing support
+              Comprehensive sleep health solutions backed by cutting-edge technology and clinical expertise
             </p>
           </div>
 
@@ -438,11 +413,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="cpap-therapy" className="relative py-24 px-6 bg-blue-50">
+      <section id="cpap-therapy" className="relative py-24 px-6 bg-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-semibold text-brand-blue mb-4">Why Choose Sleep Life Australia?</h2>
-            <p className="text-xl text-brand-blue-light leading-relaxed">We don't just test and treat sleep apnoea. We support you with clear guidance, practical education, and ongoing care at every step.</p>
+            <p className="text-xl text-brand-blue-light leading-relaxed">We support people with sleep apnoea through assessment, sleep studies, therapy, education, and ongoing care.</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -544,7 +519,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="relative py-24 px-6 bg-blue-50">
+      <section className="relative py-24 px-6 bg-gray-50">
         <div className="container mx-auto text-center">
           <div className="max-w-3xl mx-auto bg-white rounded-2xl p-12 border border-brand-blue-light/30 shadow-xl">
             <h2 className="text-4xl font-bold text-brand-blue mb-4">Ready to Improve Your Sleep?</h2>

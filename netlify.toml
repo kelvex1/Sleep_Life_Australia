@@ -1,0 +1,17 @@
+[build]
+command = "npx next build"
+publish = "out"
+
+[build.environment]
+NEXT_PUBLIC_SUPABASE_URL = "https://mbhmzriirdwzvifkpwkn.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iaG16cmlpcmR3enZpZmtwd2tuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY1MjA0MDIsImV4cCI6MjA4MjA5NjQwMn0.P5Wtk04zb5dGa222QdWcNkoJIEP3KyxvlnET0W-fNv4"
+
+[[redirects]]
+from = "/book"
+to = "/book.html"
+status = 200
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
