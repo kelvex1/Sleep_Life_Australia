@@ -1,0 +1,60 @@
+AMBIENT OCEAN SOUNDSCAPE AUDIO SETUP INSTRUCTIONS
+==================================================
+
+The website is configured to play an ambient ocean soundscape file from:
+/public/ocean-ambient.mp3
+
+AUDIO SPECIFICATIONS REQUIRED:
+-------------------------------
+- Duration: 10 minutes minimum
+- Format: MP3, OGG, or WAV (MP3 recommended for web)
+- Quality: 48kHz, 24-bit or 320kbps MP3
+- Loop: Perfectly seamless (no clicks or pops at loop point)
+- Content: Calm ocean waves, gentle pebble beach sounds
+- Wave timing: Every 8-10 seconds (synced to 4-7-8 breathing)
+- NO: Seagulls, wind, voices, boats, sudden sounds
+- Features: Binaural recording feel, pink/brown noise undertones
+
+HOW TO OBTAIN THE AUDIO FILE:
+------------------------------
+
+Option 1: AI Generation (Recommended)
+- Visit: https://elevenlabs.io/sound-effects
+- Prompt: "10 minute ultra high quality seamless looping ambient ocean soundscape, calm nighttime ocean on quiet pebble beach, very slow gentle waves every 8-10 seconds, soft rhythmic water on pebbles, no seagulls no wind, deep peaceful silence between waves, crystal clear binaural recording, subtle pink brown noise undertones, perfectly loopable, designed for meditation and 4-7-8 breathing"
+- Download the generated MP3 file
+- Rename to: ocean-ambient.mp3
+- Place in: /public/ directory
+
+Option 2: Professional Audio Libraries
+- Epidemic Sound: Search "ocean waves ambient loop"
+- AudioJungle: Search "ocean meditation seamless loop"
+- Pond5: Search "calm beach waves binaural"
+- Artlist: Search "ocean ambient breathwork"
+
+Option 3: Free Resources
+- freesound.org: Search "ocean waves loop meditation"
+- YouTube Audio Library: Search "ocean ambient"
+- Use Audacity to edit and create seamless loops
+
+Option 4: MyNoise.net Custom Generator
+- Visit: https://mynoise.net/NoiseMachines/oceanNoiseGenerator.php
+- Adjust sliders for gentle, slow waves
+- Record 10 minutes using audio capture software
+- Export as MP3
+
+TESTING THE LOOP:
+-----------------
+1. Import your audio file into Audacity or similar
+2. Test the loop point: end of file should blend seamlessly with start
+3. Add fade in/out if needed (0.5 seconds)
+4. Export as high-quality MP3 (320kbps)
+
+DEPLOYMENT:
+-----------
+Once you have the audio file:
+1. Place ocean-ambient.mp3 in the /public/ directory
+2. The website will automatically use it
+3. Test the audio player controls work correctly
+4. Verify seamless looping in the browser
+
+The audio player component is already fully implemented and ready to use!
