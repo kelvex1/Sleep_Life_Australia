@@ -2,11 +2,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Lock, Eye, FileText, Mail, Phone, MapPin, AlertCircle } from 'lucide-react';
+import { Header } from '@/components/Header';
 
 export default function PrivacyPolicyPage() {
   return (
     <>
-      <div className="min-h-screen pb-12 sm:pb-16 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-gray-50">
+      <Header />
+      <div className="min-h-screen pt-20 sm:pt-24 pb-12 sm:pb-16 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-gray-50">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-8 sm:mb-12">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-brand-blue-light/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -17,7 +19,7 @@ export default function PrivacyPolicyPage() {
               Your privacy and the security of your personal information are of utmost importance to us
             </p>
             <p className="text-brand-blue-light text-sm sm:text-base mt-2">
-              Last Updated: 22 January 2026
+              Last Updated: December 4, 2025
             </p>
           </div>
 
@@ -31,11 +33,7 @@ export default function PrivacyPolicyPage() {
                   <div>
                     <CardTitle className="text-xl sm:text-2xl text-brand-blue mb-2">Introduction</CardTitle>
                     <CardDescription className="text-sm sm:text-base text-brand-blue-light font-medium leading-relaxed">
-                      This Privacy Policy explains how Sleep Life Australia (we, us, our) collects, uses, stores, and protects your personal and health information when you use our services or interact with our website.
-                      <br /><br />
-                      Sleep Life Australia is committed to managing your information in an open and transparent way and complies with the Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).
-                      <br /><br />
-                      By attending our clinic, using our services, or accessing our website, you agree to the collection, use, and disclosure of your information as described in this Privacy Policy, subject to your rights set out below.
+                      Sleep Life Australia is committed to protecting your privacy and handling your personal and health information in accordance with the Australian Privacy Act 1988 and the Australian Privacy Principles (APPs). This Privacy Policy explains how we collect, use, store, and protect your information when you use our services or interact with our website.
                     </CardDescription>
                   </div>
                 </div>
@@ -54,22 +52,18 @@ export default function PrivacyPolicyPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-brand-blue-light font-medium">We collect personal and health information that is reasonably necessary for us to provide our sleep and allied health services.</p>
-
                 <div>
                   <h3 className="text-lg font-semibold text-brand-blue mb-2">Personal Information</h3>
-                  <p className="text-brand-blue-light font-medium mb-2">This may include:</p>
                   <ul className="list-disc list-inside text-brand-blue-light space-y-1 ml-2 font-medium">
                     <li>Name, date of birth, and contact details (phone, email, address)</li>
                     <li>Medicare and health insurance information</li>
                     <li>Emergency contact information</li>
-                    <li>Demographic information (such as gender and language preferences)</li>
+                    <li>Demographic information</li>
                   </ul>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-brand-blue mb-2">Health Information</h3>
-                  <p className="text-brand-blue-light font-medium mb-2">As a provider of health services, we collect health information, which is considered sensitive information under the Privacy Act. This may include:</p>
                   <ul className="list-disc list-inside text-brand-blue-light space-y-1 ml-2 font-medium">
                     <li>Medical history and current health conditions</li>
                     <li>Sleep study results and diagnostic data</li>
@@ -77,19 +71,16 @@ export default function PrivacyPolicyPage() {
                     <li>Treatment plans and progress notes</li>
                     <li>Doctor referrals and medical reports</li>
                   </ul>
-                  <p className="text-brand-blue-light font-medium mt-2">We collect this information directly from you where possible, and also from your referring doctor or other health professionals involved in your care, where you have provided consent or where permitted or required by law.</p>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-semibold text-brand-blue mb-2">Website Usage Information</h3>
-                  <p className="text-brand-blue-light font-medium mb-2">When you visit our website, we may collect:</p>
                   <ul className="list-disc list-inside text-brand-blue-light space-y-1 ml-2 font-medium">
                     <li>IP address and browser information</li>
                     <li>Pages visited and time spent on our website</li>
                     <li>Referral source and navigation patterns</li>
                     <li>Chat interactions with our virtual assistant (Voiceflow)</li>
                   </ul>
-                  <p className="text-brand-blue-light font-medium mt-2">We may also use website analytics tools (for example, Google Analytics or similar services) to help us understand how visitors use our website, using aggregated and de‑identified data wherever practicable.</p>
                 </div>
               </CardContent>
             </Card>
