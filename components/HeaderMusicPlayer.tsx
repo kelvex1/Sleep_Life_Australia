@@ -17,7 +17,6 @@ const tracks: Track[] = [
   { id: 'ocean', name: 'Ocean Sounds', file: '/ocean-ambient.mp3', icon: Waves },
   { id: 'rain', name: 'Rain & Thunder', file: '/rain-thunder.mp3', icon: Cloud },
   { id: 'white-noise', name: 'White Noise', file: '/white-noise.mp3.mp3', icon: Radio },
-  { id: 'pink-noise', name: 'Pink Noise', file: '/pink-noise.mp3', icon: Music },
 ];
 
 export function HeaderMusicPlayer() {
@@ -187,7 +186,7 @@ export function HeaderMusicPlayer() {
 
               <div className="mb-5 md:mb-6">
                 <p className="text-sm md:text-base text-slate-700 font-semibold mb-3 md:mb-4 text-center">Select Track</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 max-w-2xl mx-auto">
+                <div className="grid grid-cols-3 gap-2 md:gap-3 max-w-md mx-auto">
                   {tracks.map((track) => {
                     const TrackIcon = track.icon;
                     return (
