@@ -70,3 +70,29 @@ build now prints the measured bounds of every text layer:
 
 Run against text-only layers, before scrims and glows are composited —
 otherwise a full-width scrim makes every check pass trivially.
+
+## v4 — mobile source
+
+The desktop capture was abandoned. Measured, at 1080 wide:
+
+| | desktop capture | iOS recording |
+|---|---|---|
+| Page height | 2,347px | 30,711px |
+| Screens of scroll | 1.22 | 16.0 |
+| Text cap height | ~17px (≈6pt on a phone) | ~46px |
+
+A 3052px-wide layout squeezed into a 1080px frame is a 3.4x reduction — full
+width means illegible, and legible means cropping a third of every layout off.
+No framing choice escapes that. The mobile-width recording reflows the page and
+removes the tradeoff.
+
+Chrome is cropped by taking the longest *contiguous* run of changing rows
+(rows 156–1280). Do not take the first changing row: the iOS clock ticks, so the
+status bar reads as content and the Safari URL bar ends up stamped down the page.
+
+Scroll pacing comes from `scroll_resample.py` — read the bug notes in it before
+touching the offset search.
+
+Structure is now: 4s phone opener (hook text, fades before the cut) → white
+flash on the drop → 20s full-bleed scroll → ends on content. No captions, no CTA
+card. 12 bars at 120 BPM = 24.000s.
