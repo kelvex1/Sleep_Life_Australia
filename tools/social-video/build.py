@@ -11,9 +11,12 @@ the site's own scroll and the dolly-in already present in the phone footage.
 pixels per frame, so it stepped rather than glided and read as handheld shake.)
 """
 import subprocess
+import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 W,H=1080,1920
+SAFE=60      # nothing may render inside this margin
+MAXW=940     # usable text width
 ACC=(178,255,51)     # neon lime, sampled from the live site
 BG=(3,5,5)           # the site's own background, so bands read as continuous
 MB="/usr/share/fonts/truetype/higgsfield/Montserrat-ExtraBold.ttf"
@@ -33,44 +36,77 @@ def ls(dr,cx,y,txt,font,fill,sp=6,left=None):
         dr.text((x,y),ch,font=font,fill=fill,anchor="lm"); x+=w+sp
     return tot
 
+d0=ImageDraw.Draw(Image.new("RGB",(10,10)))
+
+def wrapfit(txt,maxw,sizes):
+    """Largest size whose greedy wrap yields <=2 lines that each fit maxw.
+
+    v2 hardcoded the line breaks at 84pt and "you finally got a website"
+    measured 1099px in a 1080px frame, so it was clipped at both edges.
+    Sizing is derived now, never assumed.
+    """
+    for s in sizes:
+        f=ImageFont.truetype(MB,s); lines=[]; cur=""
+        for w in txt.split():
+            t=(cur+" "+w).strip()
+            if d0.textlength(t,font=f)<=maxw: cur=t
+            else:
+                if cur: lines.append(cur)
+                cur=w
+        if cur: lines.append(cur)
+        if len(lines)<=2 and all(d0.textlength(l,font=f)<=maxw for l in lines):
+            return f,s,lines
+    raise SystemExit("no size fits: "+txt)
+
+def check(layer,name):
+    """Fail the build if any glyph lands inside the safe margin.
+
+    Run against a text-only RGBA layer, before scrims/glows are composited.
+    """
+    a=np.asarray(layer); ys,xs=np.where(a[:,:,3]>8)
+    if not len(xs): raise SystemExit(name+": no pixels")
+    x0,x1,y0,y1=int(xs.min()),int(xs.max()),int(ys.min()),int(ys.max())
+    print("SAFE %-8s x[%4d..%4d] y[%4d..%4d]"%(name,x0,x1,y0,y1))
+    if x0<SAFE or x1>W-SAFE or y0<SAFE or y1>H-SAFE:
+        raise SystemExit("SAFE-AREA FAIL "+name)
+
 # ---- hook, lower third over the phone shot (fades out before the cut) ----
-im=Image.new("RGBA",(W,H),(0,0,0,0))
-fk=ImageFont.truetype(MB,38); fh=ImageFont.truetype(MB,84)
-sh=Image.new("RGBA",(W,H),(0,0,0,0)); sd=ImageDraw.Draw(sh)
-sd.rectangle([0,1180,W,H],fill=(0,0,0,120))
-im=Image.alpha_composite(im,sh.filter(ImageFilter.GaussianBlur(60)))
-dr=ImageDraw.Draw(im)
-ls(dr,W/2,1330,"POV",fk,ACC+(255,),sp=14)
-for i,(t,col) in enumerate([("you finally got a website",(255,255,255,255)),
-                            ("that converts",ACC+(255,))]):
-    y=1440+i*104
-    dr.text((W/2+2,y+3),t,font=fh,fill=(0,0,0,170),anchor="mm")
-    dr.text((W/2,y),t,font=fh,fill=col,anchor="mm")
-im.save("t_hook.png")
+f,size,lines=wrapfit("you finally got a website that converts",MAXW,
+                     [88,84,80,76,72,68,64])
+print("HOOK size",size,"lines",lines)
+lh=int(size*1.24)
+tl=Image.new("RGBA",(W,H),(0,0,0,0)); td=ImageDraw.Draw(tl)
+y0=1560-(len(lines)-1)*lh
+ls(td,W/2,y0-lh-14,"POV",ImageFont.truetype(MB,38),ACC+(255,),sp=14)
+for i,t in enumerate(lines):
+    col=ACC+(255,) if "converts" in t else (255,255,255,255)
+    td.text((W/2,y0+i*lh),t,font=f,fill=col,anchor="mm")
+check(tl,"hook")
+sc=Image.new("RGBA",(W,H),(0,0,0,0))
+ImageDraw.Draw(sc).rectangle([0,1150,W,H],fill=(0,0,0,125))
+Image.alpha_composite(sc.filter(ImageFilter.GaussianBlur(60)),tl).save("t_hook.png")
 
 # ---- caption over the before/after ----
-im=Image.new("RGBA",(W,H),(0,0,0,0)); dr=ImageDraw.Draw(im)
+tl=Image.new("RGBA",(W,H),(0,0,0,0)); td=ImageDraw.Draw(tl)
 fc=ImageFont.truetype(MB,46)
 for i,(t,col) in enumerate([("NOT JUST PRETTY.",(255,255,255,255)),
                             ("BUILT TO SELL.",ACC+(255,))]):
-    y=1630+i*66
-    dr.text((72+2,y+3),t,font=fc,fill=(0,0,0,190),anchor="lm")
-    dr.text((72,y),t,font=fc,fill=col,anchor="lm")
-im.save("t_cap.png")
+    td.text((72,1630+i*66),t,font=fc,fill=col,anchor="lm")
+check(tl,"caption"); tl.save("t_cap.png")
 
 # ---- end card ----
-im=Image.new("RGB",(W,H),BG)
-g=Image.new("RGB",(W,H),BG); gd=ImageDraw.Draw(g)
-gd.ellipse([W/2-560,1250,W/2+560,2150],fill=(38,64,14))   # echoes the site's CTA glow
-im=Image.blend(im,g.filter(ImageFilter.GaussianBlur(200)),0.9)
-dr=ImageDraw.Draw(im)
+tl=Image.new("RGBA",(W,H),(0,0,0,0)); td=ImageDraw.Draw(tl)
 f1=ImageFont.truetype(MB,86); f2=ImageFont.truetype(MB,56); f3=ImageFont.truetype(MB,46)
-dr.text((W/2,700),"your competitors",font=f1,fill=(255,255,255),anchor="mm")
-dr.text((W/2,806),"don't have this.",font=f1,fill=ACC,anchor="mm")
-dr.rounded_rectangle([W/2-90,946,W/2+90,952],radius=3,fill=ACC)
-dr.text((W/2,1064),"DM 'WEBSITE'",font=f2,fill=(255,255,255),anchor="mm")
-ls(dr,W/2,1158,"syvex.xyz",f3,ACC,sp=5)
-im.save("endcard.png")
+td.text((W/2,700),"your competitors",font=f1,fill=(255,255,255,255),anchor="mm")
+td.text((W/2,806),"don't have this.",font=f1,fill=ACC+(255,),anchor="mm")
+td.rounded_rectangle([W/2-90,946,W/2+90,952],radius=3,fill=ACC+(255,))
+td.text((W/2,1064),"DM 'WEBSITE'",font=f2,fill=(255,255,255,255),anchor="mm")
+ls(td,W/2,1158,"syvex.xyz",f3,ACC+(255,),sp=5)
+check(tl,"endcard")
+bgi=Image.new("RGB",(W,H),BG); gl=Image.new("RGB",(W,H),BG)
+ImageDraw.Draw(gl).ellipse([W/2-560,1250,W/2+560,2150],fill=(38,64,14))  # echoes the site's CTA glow
+bgi=Image.blend(bgi,gl.filter(ImageFilter.GaussianBlur(200)),0.9).convert("RGBA")
+Image.alpha_composite(bgi,tl).convert("RGB").save("endcard.png")
 
 GRS="eq=contrast=1.04:saturation=1.10"
 

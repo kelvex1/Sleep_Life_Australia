@@ -53,3 +53,20 @@ Needs ffmpeg, numpy, Pillow and Montserrat ExtraBold.
 - Source timestamps: the second arg of each `band()` / `fill()` call
 - Tempo: `BPM` in `mk_music.py` — keep it a divisor of 3600 so bars stay
   whole frames at 30fps (120 works; 124 gives 58.06 frames/bar and drifts)
+
+## Safe-area guard
+`check()` fails the build if any glyph renders within 60px of a frame edge,
+and `wrapfit()` derives the type size instead of assuming it.
+
+This is not decoration. v2 hardcoded the hook's line breaks at 84pt, and
+"you finally got a website" measures 1099px in a 1080px frame — it shipped
+clipped at both edges, and no pixel-count or duration check caught it. The
+build now prints the measured bounds of every text layer:
+
+    HOOK size 80  lines ['you finally got a', 'website that converts']
+    SAFE hook     x[  73..1005] y[1334..1589]
+    SAFE caption  x[  75.. 521] y[1614..1713]
+    SAFE endcard  x[ 144.. 933] y[ 661..1183]
+
+Run against text-only layers, before scrims and glows are composited —
+otherwise a full-width scrim makes every check pass trivially.
