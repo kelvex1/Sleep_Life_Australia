@@ -1,6 +1,6 @@
-"""124 BPM house bed for the Flow Scapes reel. 8 bars, drop on bar 3 (3.871s)."""
+"""120 BPM house bed for the Flow Scapes reel. 8 bars = 16.000s, drop on bar 3 (4.0s)."""
 import numpy as np, wave
-SR=44100; BPM=124.0
+SR=44100; BPM=120.0
 beat=60.0/BPM; bar=4*beat; BARS=8; DUR=BARS*bar
 N=int(DUR*SR)+SR
 music=np.zeros(N); fx=np.zeros(N)

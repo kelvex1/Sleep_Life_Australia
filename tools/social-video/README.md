@@ -1,33 +1,55 @@
 # Flow Scapes / Syvex social reel
 
-Reproducible build for the 15.5s vertical (1080x1920) reel cut from the
-Flow Scapes website screen-recording.
+Reproducible build for the 16.0s vertical (1080x1920) reel.
+
+## Inputs
+- `phone.mp4` — handheld shot of the laptop showing the site, with a dolly-in
+- `src.mp4` — the website screen-recording (3052x1648)
+- `music.mp3` — from `mix_music.sh`
 
 ## Structure
-124 BPM, 8 bars. Every cut lands on a bar line; the site reveal lands on the drop.
+120 BPM. A bar is exactly 60 frames at 30fps, so every cut is frame-accurate
+against the music — 480 frames, 16.000s, no drift.
 
-| Out time | Bar | Segment |
-|---|---|---|
-| 0.000 - 3.871 | 1-2 | Hook: blurred/darkened punch-in on hero + "POV..." text |
-| 3.871 | 3 | **DROP** - white flash, full site reveal |
-| 3.871 - 5.806 | 3 | Hero, framed card |
-| 5.806 - 7.742 | 4 | Services scroll |
-| 7.742 - 9.677 | 5 | Before/after turf slider + "THIS IS WHAT CONVERTS" |
-| 9.677 - 11.613 | 6 | Project gallery |
-| 11.613 - 13.548 | 7 | Contact / footer CTA |
-| 13.548 - 15.484 | 8 | End card - DM 'WEBSITE' / @syvex |
+| Out time | Bar | Segment | Framing |
+|---|---|---|---|
+| 0.0 – 4.0 | 1-2 | Phone opener, hook text (fades by 3.5) | full frame |
+| **4.0** | **3** | **DROP** — white flash, match cut on the peak of the zoom | |
+| 4.0 – 6.0 | 3 | Hero reveal — whole site at once | band |
+| 6.0 – 8.0 | 4 | Services | full bleed |
+| 8.0 – 10.0 | 5 | Before/after turf slider + caption | full bleed |
+| 10.0 – 12.0 | 6 | Project gallery | full bleed |
+| 12.0 – 14.0 | 7 | Contact / footer CTA | band |
+| 14.0 – 16.0 | 8 | End card — DM 'WEBSITE' / syvex.xyz | static |
 
-Accent `#B2FF33` is sampled from the live site.
+## Framing rules
+The site content spans x=160..3017 of a 3052px-wide frame, so a full-bleed 9:16
+crop (927px) loses about a third of every layout. Two treatments:
+
+- **band** — whole site at full width (1080x618), padded to 1080x1920 with the
+  site's own background `#030505`, so the padding reads as the page continuing
+  rather than as a letterbox. Used where the layout is wide.
+- **full bleed** — 927px 9:16 slice scaled up. Only on photo-led sections
+  (before/after, gallery) where cropping costs nothing.
+
+## Motion
+Every shot is locked off. The only movement is the site's own scroll and the
+dolly-in already in the phone footage.
+
+Do not reintroduce `zoompan` for camera moves — it rounds its crop offset to
+whole pixels each frame, so a slow zoom steps instead of glides and reads as
+handheld shake. If a push is ever wanted, oversample and use a `crop` with a
+time-varying offset, or bake it in-camera.
 
 ## Usage
-    python3 mk_music.py          # -> music.mp3 (124 BPM house bed)
-    python3 build.py             # needs src.mp4 + music.mp3 -> final.mp4
+    ./mix_music.sh      # -> music.mp3
+    python3 build.py    # -> final.mp4
 
-`src.mp4` is the website screen-recording. Both scripts run anywhere with
-ffmpeg, numpy and Pillow (they were run in the Higgsfield sandbox).
+Needs ffmpeg, numpy, Pillow and Montserrat ExtraBold.
 
 ## Tweaks
-- Hook copy: `hook_png()` in build.py
-- Cut timing: `T` list (bar multiples) in build.py
-- Transitions: `TR` list in build.py
-- Tempo / drop position: `BPM` in mk_music.py (drop = bar 3)
+- Hook copy / end card: top of `build.py`
+- Cut timing: the `band()` / `fill()` call order (each is one bar)
+- Source timestamps: the second arg of each `band()` / `fill()` call
+- Tempo: `BPM` in `mk_music.py` — keep it a divisor of 3600 so bars stay
+  whole frames at 30fps (120 works; 124 gives 58.06 frames/bar and drifts)
