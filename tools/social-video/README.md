@@ -96,3 +96,23 @@ touching the offset search.
 Structure is now: 4s phone opener (hook text, fades before the cut) → white
 flash on the drop → 20s full-bleed scroll → ends on content. No captions, no CTA
 card. 12 bars at 120 BPM = 24.000s.
+
+## v5 — stills + real scroll
+
+The live-scroll resample was abandoned: it made the site header flicker. Measured
+on the source recordings, the header moves only 5% / 2% as much as the body — it
+is stable. The flicker was the resampler jumping between non-adjacent frames and
+catching the header mid hide/reveal. Played at natural speed the videos are fine.
+
+Structure (24.000s, 12 bars at 120 BPM):
+
+| Time | Source |
+|---|---|
+| 0–4s | handheld phone opener + hook, fades before the cut |
+| **4s** | **drop — white flash** |
+| 4–9s | Video 1, natural speed |
+| 9–13s | strip A: 2 screenshots stacked, gliding scroll |
+| 13–18s | Video 2, natural speed |
+| 18–24s | strip B: 2 screenshots stacked, ends on the richest |
+
+See `stills_to_motion.py` for why the stills read as motion.
