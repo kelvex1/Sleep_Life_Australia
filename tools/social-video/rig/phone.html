@@ -45,6 +45,14 @@ const BOX_H   = P('boxH')   ?? 18;
 const BOX_X   = P('boxX')   ?? 11;
 const BOX_Y   = P('boxY')   ?? 8;
 const BOX_Z   = P('boxZ')   ?? 30;
+// camera path
+const ARC     = P('arc')    ?? 42;     // total degrees swept
+const ARC0    = P('arc0')   ?? -21;    // where the sweep starts
+const DIST0   = P('dist0')  ?? 0.415;  // start distance, in handset heights
+const DPULL   = P('dpull')  ?? 0.020;  // how much closer it gets at mid-sweep
+const RISE    = P('rise')   ?? 0.012;  // vertical bob
+const EYE     = P('eye')    ?? 0.086;  // eye height
+const TILT    = P('tilt')   ?? 0.86;   // where on the handset the camera looks
 
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
@@ -152,13 +160,13 @@ scene.add(new THREE.AmbientLight(0x0a0a12, 1.0));
    matching position and velocity, so the loop has no visible turnaround.     */
 const rad = d => d*Math.PI/180;
 const smoothstep = x => x*x*(3-2*x);
-const TGT = new THREE.Vector3(0, PHZ*0.86, 0);
+const TGT = new THREE.Vector3(0, PHZ*TILT, 0);
 
 function pose(f){
   const p = f/NF, tri = 1-Math.abs(2*p-1);
-  const ang  = rad(-21) + rad(42)*smoothstep(tri);
-  const dist = (0.415 - 0.020*smoothstep(tri))*S;
-  const y    = (0.086 + 0.012*Math.sin(2*Math.PI*p))*S;
+  const ang  = rad(ARC0) + rad(ARC)*smoothstep(tri);
+  const dist = (DIST0 - DPULL*smoothstep(tri))*S;
+  const y    = (EYE + RISE*Math.sin(2*Math.PI*p))*S;
   camera.position.set(Math.sin(ang)*dist, y, Math.cos(ang)*dist);
   camera.lookAt(TGT);
   camera.updateMatrixWorld();

@@ -162,6 +162,16 @@ if __name__=="__main__":
         for i,t in enumerate([float(x) for x in sys.argv[2:]]):
             frame(t).save(f"sf/f{i:02d}.jpg",quality=93)
         print("sample ok")
+    elif sys.argv[1]=="seg":
+        # a short slice, for judging motion without paying for the whole cut
+        import subprocess as sp
+        a,b,dst=float(sys.argv[2]),float(sys.argv[3]),sys.argv[4]
+        FF="/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"
+        p=sp.Popen([FF,"-v","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}",
+            "-r",str(FPS),"-i","-","-an","-c:v","libx264","-preset","fast","-crf","20",
+            "-pix_fmt","yuv420p",dst],stdin=sp.PIPE)
+        for k in range(int((b-a)*FPS)): p.stdin.write(frame(a+k/FPS).tobytes())
+        p.stdin.close(); p.wait(); print("SEG_DONE",dst)
     else:
         import subprocess as sp
         FF="/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"
