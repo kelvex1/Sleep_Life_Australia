@@ -89,6 +89,17 @@ def load_page(key):
     of baked frames. A frozen hero is the difference between a screen that is
     alive and one that is a photograph."""
     vd=os.path.join(PAGEDIR,key+"_v")
+    if not os.path.isdir(vd) and os.path.isfile(vd+".mp4"):
+        # the repo carries a compact clip of exactly the frames used; the
+        # loose frames are build output and are not committed
+        os.makedirs(vd,exist_ok=True)
+        cap=cv2.VideoCapture(vd+".mp4"); j=0
+        while True:
+            ok,fr=cap.read()
+            if not ok: break
+            cv2.imwrite(os.path.join(vd,f"f{j:04d}.jpg"),fr,[cv2.IMWRITE_JPEG_QUALITY,94]); j+=1
+        cap.release()
+        print(f"  unpacked {j} frames for {key}")
     if os.path.isdir(vd):
         n=len([f for f in os.listdir(vd) if f.endswith(".jpg")])
         if n: return ("vid",vd,n)
