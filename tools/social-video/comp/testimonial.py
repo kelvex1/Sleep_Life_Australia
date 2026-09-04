@@ -21,6 +21,7 @@ from comp import W,H,FPS,smoke
 ORDER=[int(i) for i in os.environ.get("SYVEX_ORDER","5,0,1,2,3,4,6").split(",")]
 comp.SITES=[comp.SITES[i] for i in ORDER]
 comp.PAGES=[comp.PAGES[i] for i in ORDER]+[comp.PAGES[-1]]
+comp.BEAT=float(os.environ.get("SYVEX_TBEAT","2.04"))   # 10.2s of carousel = 5 whole sites
 
 FACE=os.environ.get("SYVEX_FACE","/tmp/testi/fr")
 VOICE=os.environ.get("SYVEX_VOICE","/tmp/testi/voice.wav")
@@ -29,8 +30,11 @@ NFACE=len([f for f in os.listdir(FACE) if f.endswith(".jpg")])
 DISS=0.34                      # transition length, seconds
 
 # shot list: (kind, duration). "face" = Aaron, "site" = the handset carousel.
-SHOTS=[("face",3.6),("site",4.8),("face",2.4),("site",5.4),
-       ("face",2.2),("site",0.7),("card",2.9)]
+# No fragment shots: a 0.7s tail resumed mid-site and showed Electeq twice.
+# The beat is shortened for this cut so five sites land whole inside the time
+# the carousel actually gets.
+SHOTS=[("face",3.6),("site",5.1),("face",2.4),("site",5.1),
+       ("face",2.9),("card",2.9)]
 DUR=sum(d for _,d in SHOTS)
 
 _vy,_vx=np.mgrid[0:H,0:W].astype(np.float32)
