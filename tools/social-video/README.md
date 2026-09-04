@@ -1,118 +1,113 @@
-# Flow Scapes / Syvex social reel
+# Syvex video toolkit
 
-Reproducible build for the 16.0s vertical (1080x1920) reel.
+Everything needed to build the orbiting-handset website reels, so a new session
+starts at "make the ad" instead of rebuilding the pipeline.
 
-## Inputs
-- `phone.mp4` — handheld shot of the laptop showing the site, with a dolly-in
-- `src.mp4` — the website screen-recording (3052x1648)
-- `music.mp3` — from `mix_music.sh`
+## What it does
 
-## Structure
-120 BPM. A bar is exactly 60 frames at 30fps, so every cut is frame-accurate
-against the music — 480 frames, 16.000s, no drift.
+A phone orbits on a dark reflective floor in red/black smoke. Client websites
+sit on its screen and swipe between each other like a carousel. 1080x1920, the
+length is whatever the beat grid adds up to.
 
-| Out time | Bar | Segment | Framing |
-|---|---|---|---|
-| 0.0 – 4.0 | 1-2 | Phone opener, hook text (fades by 3.5) | full frame |
-| **4.0** | **3** | **DROP** — white flash, match cut on the peak of the zoom | |
-| 4.0 – 6.0 | 3 | Hero reveal — whole site at once | band |
-| 6.0 – 8.0 | 4 | Services | full bleed |
-| 8.0 – 10.0 | 5 | Before/after turf slider + caption | full bleed |
-| 10.0 – 12.0 | 6 | Project gallery | full bleed |
-| 12.0 – 14.0 | 7 | Contact / footer CTA | band |
-| 14.0 – 16.0 | 8 | End card — DM 'WEBSITE' / syvex.xyz | static |
+The one idea worth keeping: **the screen is never rendered in 3D.** The rig
+renders the handset with a near-black screen, so the plate carries only glass
+reflections, and exports the screen's four corners for every frame. The website
+is warped onto those corners afterwards at full resolution. That is why the type
+stays sharp instead of turning to mush, and it is also why generative video
+cannot do this job - diffusion models cannot hold text below about 40px.
 
-## Framing rules
-The site content spans x=160..3017 of a 3052px-wide frame, so a full-bleed 9:16
-crop (927px) loses about a third of every layout. Two treatments:
+## Layout
 
-- **band** — whole site at full width (1080x618), padded to 1080x1920 with the
-  site's own background `#030505`, so the padding reads as the page continuing
-  rather than as a letterbox. Used where the layout is wide.
-- **full bleed** — 927px 9:16 slice scaled up. Only on photo-led sections
-  (before/after, gallery) where cropping costs nothing.
+    rig/     phone.html   the handset + orbit, three.js, tunable from the URL
+             render.py    headless-WebGL driver -> frames/ + corners.json
+    comp/    comp.py      the compositor: smoke, plate, screen, type, grade
+             smoke.py     procedural red/black fBm smoke
+             page.py      stitches a screen recording into one tall page image
+             grit.py      type with a printed speckle
+    pages/   n1..n6.png   stitched client pages (see "Source material")
+    fonts/   Archivo
 
-## Motion
-Every shot is locked off. The only movement is the site's own scroll and the
-dolly-in already in the phone footage.
+## Build
 
-Do not reintroduce `zoompan` for camera moves — it rounds its crop offset to
-whole pixels each frame, so a slow zoom steps instead of glides and reads as
-handheld shake. If a push is ever wanted, oversample and use a `crop` with a
-time-varying offset, or bake it in-camera.
+    cd rig  && python3 render.py --out frames --w 540 --h 960   # ~3 s
+    cd comp && python3 comp.py full                             # writes final_v.mp4
 
-## Usage
-    ./mix_music.sh      # -> music.mp3
-    python3 build.py    # -> final.mp4
+Preview a few moments without rendering the lot:
 
-Needs ffmpeg, numpy, Pillow and Montserrat ExtraBold.
+    python3 comp.py sample 1.2 7.6 16.4        # -> comp/sf/*.jpg
 
-## Tweaks
-- Hook copy / end card: top of `build.py`
-- Cut timing: the `band()` / `fill()` call order (each is one bar)
-- Source timestamps: the second arg of each `band()` / `fill()` call
-- Tempo: `BPM` in `mk_music.py` — keep it a divisor of 3600 so bars stay
-  whole frames at 30fps (120 works; 124 gives 58.06 frames/bar and drifts)
+Override paths and the smoke level with `SYVEX_RIG`, `SYVEX_PAGES`, `SYVEX_SMOKE`.
 
-## Safe-area guard
-`check()` fails the build if any glyph renders within 60px of a frame edge,
-and `wrapfit()` derives the type size instead of assuming it.
+## Tuning the look
 
-This is not decoration. v2 hardcoded the hook's line breaks at 84pt, and
-"you finally got a website" measures 1099px in a 1080px frame — it shipped
-clipped at both edges, and no pixel-count or duration check caught it. The
-build now prints the measured bounds of every text layer:
+Every material knob is a URL parameter, so a sweep is one render each and a
+render is about three seconds. Judge them by rendering the full loop and looking
+at four frames - a single frame will not tell you whether a highlight *moves*,
+and movement is most of what makes it feel real.
 
-    HOOK size 80  lines ['you finally got a', 'website that converts']
-    SAFE hook     x[  73..1005] y[1334..1589]
-    SAFE caption  x[  75.. 521] y[1614..1713]
-    SAFE endcard  x[ 144.. 933] y[ 661..1183]
+    python3 render.py --page "phone.html?boxI=9&boxW=3.5&boxZ=30" --out /tmp/try
 
-Run against text-only layers, before scrims and glows are composited —
-otherwise a full-width scrim makes every check pass trivially.
-
-## v4 — mobile source
-
-The desktop capture was abandoned. Measured, at 1080 wide:
-
-| | desktop capture | iOS recording |
-|---|---|---|
-| Page height | 2,347px | 30,711px |
-| Screens of scroll | 1.22 | 16.0 |
-| Text cap height | ~17px (≈6pt on a phone) | ~46px |
-
-A 3052px-wide layout squeezed into a 1080px frame is a 3.4x reduction — full
-width means illegible, and legible means cropping a third of every layout off.
-No framing choice escapes that. The mobile-width recording reflows the page and
-removes the tradeoff.
-
-Chrome is cropped by taking the longest *contiguous* run of changing rows
-(rows 156–1280). Do not take the first changing row: the iOS clock ticks, so the
-status bar reads as content and the Safari URL bar ends up stamped down the page.
-
-Scroll pacing comes from `scroll_resample.py` — read the bug notes in it before
-touching the offset search.
-
-Structure is now: 4s phone opener (hook text, fades before the cut) → white
-flash on the drop → 20s full-bleed scroll → ends on content. No captions, no CTA
-card. 12 bars at 120 BPM = 24.000s.
-
-## v5 — stills + real scroll
-
-The live-scroll resample was abandoned: it made the site header flicker. Measured
-on the source recordings, the header moves only 5% / 2% as much as the body — it
-is stable. The flicker was the resampler jumping between non-adjacent frames and
-catching the header mid hide/reveal. Played at natural speed the videos are fine.
-
-Structure (24.000s, 12 bars at 120 BPM):
-
-| Time | Source |
+| knob | does |
 |---|---|
-| 0–4s | handheld phone opener + hook, fades before the cut |
-| **4s** | **drop — white flash** |
-| 4–9s | Video 1, natural speed |
-| 9–13s | strip A: 2 screenshots stacked, gliding scroll |
-| 13–18s | Video 2, natural speed |
-| 18–24s | strip B: 2 screenshots stacked, ends on the richest |
+| `railR` `railE` | rail roughness / environment intensity |
+| `scrCR` `scrE` | screen clearcoat roughness / environment intensity |
+| `boxI boxW boxH boxX boxY boxZ` | the strip light that puts the sheen on the glass |
+| `expo` | tone-mapping exposure |
+| `debug=env` `debug=chrome` | show the environment map, or a chrome probe in it |
 
-See `stills_to_motion.py` for why the stills read as motion.
+Two things learned the hard way:
+
+- **Place the strip light by the mirror geometry, not by eye.** For a flat screen
+  the reflected direction from the centre is `reflect(P - C, n)`. Guessing put it
+  on the wrong side of the scene for several rounds.
+- **Closer and bigger is not brighter, it is flatter.** A large source subtends a
+  wide angle and floods the glass to uniform grey. Small, far and bright gives a
+  streak that moves as the camera orbits.
+
+## Why WebGL and not Cycles
+
+The rig started in Blender. Same scene, same camera path, measured on this
+hardware (4 cores, no GPU):
+
+| | 150 frames |
+|---|---|
+| Cycles CPU | 65 min |
+| three.js / SwiftShader | 2.7 s |
+
+Roughly 1,400x. The point is not the render time, it is that trying eight camera
+moves becomes possible, and that is where quality actually comes from.
+
+The trade is real: no path tracing, so no true global illumination or caustics.
+An environment map stands in for bounced light. For a product on a plinth the gap
+is small. Fall back to Blender for a hero shot where bounced light matters.
+
+Blender notes for this environment: Cycles CPU only, EEVEE unavailable (no
+libEGL), and this `bpy` wheel ships no OpenImageDenoise - the denoiser list is
+empty, so low-sample renders cannot be cleaned up.
+
+## Source material
+
+`page.py` stitches a screen recording into one continuous page: it estimates the
+scroll offset between frames and pastes only the newly revealed strip, so sticky
+headers are not stamped repeatedly.
+
+**Recordings are usually the bottleneck, not the renderer.** Every clip supplied
+so far travelled under a third of one screen - measure before planning a scroll:
+
+    python3 page.py        # prints page height in viewports per clip
+
+Under about 1.4 viewports there is nothing to scroll and the swipe carousel is
+the right format. For real scrolling, capture whole pages instead: iPhone Safari
+screenshot -> **Full Page** -> Save PDF, or Chrome device mode -> `Cmd+Shift+P` ->
+"Capture full size screenshot".
+
+## Environment
+
+- No GPU. Chromium at `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`;
+  pass `executable_path`, and launch with
+  `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader`.
+- ES modules will not load over `file://` - `render.py` serves the rig over
+  loopback HTTP. Without that the page simply never becomes ready.
+- `canvas.toDataURL` needs `preserveDrawingBuffer: true` or every frame is empty.
+- Most of the internet is blocked by the egress policy, **but npm and PyPI are
+  not** - that is how three.js gets here. Do not try to route around the block.

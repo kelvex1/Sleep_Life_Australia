@@ -1,0 +1,172 @@
+import os, sys, json, math, cv2, numpy as np
+HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
+from PIL import Image, ImageDraw, ImageFilter
+from grit import W,H,BK,RG,WHT,RED,grit_text,fit
+from smoke import smoke
+FPS=30; BEAT=2.5; CARD=3.0
+SWIPE=0.60                  # how long a flick between pages takes
+GUT=20                      # gutter between pages, like a real carousel
+# The rig - either the WebGL one (rig/render.py, seconds) or a Blender bake.
+# Both emit the same two things: RGBA frames and per-frame screen corners.
+RIG=os.environ.get("SYVEX_RIG", os.path.join(HERE,"..","rig"))
+PAGEDIR=os.environ.get("SYVEX_PAGES", os.path.join(HERE,"..","pages"))
+FRDIR=os.path.join(RIG,"frames")
+COR=json.load(open(os.path.join(RIG,"corners.json")))
+NORB=len(COR)
+_p0=cv2.imread(os.path.join(FRDIR,"f0000.png"),cv2.IMREAD_UNCHANGED)
+QSCALE=W/float(_p0.shape[1])          # plate is rendered small; corners scale with it
+SITES=[("n1","ACE BALLERZ","WANNEROO · PERTH"),
+       ("n2","ME-SOLAR","PORT STEPHENS · NSW"),
+       ("n3","FLOW SCAPES","PERTH METRO"),
+       ("n4","ELECTEQ","PERTH"),
+       ("n5","ADELAIDE CHAUFFEUR","ADELAIDE · SA"),
+       ("n6","ZEROGRIME SOLUTIONS","BUNBURY · WA")]
+NB=len(SITES)
+DUR=NB*BEAT+CARD; N=int(DUR*FPS)
+# type always lands on clean black - a soft floor scrim, never a hard band
+_gy=np.arange(H,dtype=np.float32)[:,None,None]
+SCRIM=1.-np.clip((_gy-1370.)/530.,0,1)**1.35*0.86
+_vy,_vx=np.mgrid[0:H,0:W].astype(np.float32)
+_vr=np.sqrt(((_vx-W/2)/(W*.70))**2+((_vy-H*.46)/(H*.68))**2)
+VIG=(1.-np.clip((_vr-.42)/.80,0,1)**1.4*0.88)[:,:,None]
+# The Blender plate carried an opaque floor that hid most of the smoke. The
+# WebGL plate is the handset alone, so the smoke needs pulling back to match.
+SMOKE_GAIN=float(os.environ.get("SYVEX_SMOKE","0.60"))
+
+def io_(p): return 4*p*p*p if p<.5 else 1-((-2*p+2)**3)/2
+def oc(p): return 1-(1-p)**3
+def sg(t,a,b): return max(0.,min(1.,(t-a)/(b-a)))
+
+SRCW,SRCH=620,1298          # matches the phone screen's own aspect (2.0934)
+ASP=SRCH/float(SRCW)
+
+def hero(key):
+    """the site's top screenful, cropped to the phone screen with no distortion"""
+    pg=cv2.imread(os.path.join(PAGEDIR,f"{key}.png")); PH,PW=pg.shape[:2]
+    wh=min(PH,int(round(PW*ASP))); ww=int(round(wh/ASP))
+    x0=(PW-ww)//2
+    return cv2.resize(pg[0:wh, x0:x0+ww],(SRCW,SRCH),interpolation=cv2.INTER_AREA)
+
+PAGES=[hero(k) for k,_,_ in SITES]
+PAGES.append(cv2.cvtColor(np.asarray(Image.open(os.path.join(HERE,"endscreen.png")).convert("RGB")),
+                          cv2.COLOR_RGB2BGR))
+print("pages ready",len(PAGES))
+GAP=np.zeros((SRCH,GUT,3),np.uint8)
+STRIP=np.hstack([x for p in PAGES for x in (p,GAP)])[:,:-GUT]   # one long carousel
+PITCH=SRCW+GUT
+
+def flick(u):
+    """a swipe that eases off the finger and settles - symmetric, so peak speed
+    stays low enough that a frame never jumps further than the eye can track"""
+    return u*u*u*(u*(u*6-15)+10)
+
+def page_pos(t):
+    """continuous position along the carousel, in pages"""
+    i=min(NB,int(t/BEAT)); local=t-i*BEAT
+    if i>=NB: return float(NB)
+    hold=BEAT-SWIPE
+    if local<=hold: return float(i)
+    return i+flick((local-hold)/SWIPE)
+
+def screen(t):
+    """the carousel at time t, with real motion blur across the frame's exposure"""
+    # crisp, the way a phone display actually presents a swipe - any blur here
+    # reads as ghosting rather than motion
+    o=int(round(page_pos(t)*PITCH))
+    o=max(0,min(STRIP.shape[1]-SRCW,o))
+    return STRIP[:,o:o+SRCW]
+
+PLATE={}
+def plate(k):
+    if k not in PLATE:
+        im=Image.open(os.path.join(FRDIR,f"f{k:04d}.png")).convert("RGBA").resize((W,H),Image.LANCZOS)
+        PLATE[k]=np.asarray(im).astype(np.float32)
+        if len(PLATE)>40: PLATE.pop(next(iter(PLATE)))
+    return PLATE[k]
+
+def quad(k):
+    c=COR[str(k)]
+    return np.array([[p[0]*QSCALE,p[1]*QSCALE] for p in c],np.float32)
+
+def orbit_index(t):
+    return int((t*FPS)%NORB)
+
+def frame(t):
+    ok=orbit_index(t)
+    P=plate(ok); A=P[:,:,3:4]/255.; rgb=P[:,:,:3].copy()
+    q=quad(ok)
+
+    # the site goes under the glass first, so the floor reflects it too
+    src=np.array([[0,0],[SRCW,0],[SRCW,SRCH],[0,SRCH]],np.float32)
+    Mx=cv2.getPerspectiveTransform(src,q)
+    warp=cv2.warpPerspective(cv2.cvtColor(screen(t),cv2.COLOR_BGR2RGB),Mx,(W,H),
+                             flags=cv2.INTER_LANCZOS4,borderMode=cv2.BORDER_CONSTANT)
+    m=np.zeros((H,W),np.uint8); cv2.fillConvexPoly(m,q.astype(np.int32),255)
+    m=cv2.GaussianBlur(m,(0,0),1.2).astype(np.float32)[:,:,None]/255.
+    rgb=rgb*(1-m)+np.clip(warp*0.97+rgb*0.45,0,255)*m   # keep the sheen, lose the wash
+    A=np.maximum(A,m)
+
+    sm=smoke(t*0.9)*SMOKE_GAIN
+    base=sm.copy()
+
+    # the floor is 2D: the handset mirrored, faded and softened. Doing it here
+    # rather than in the rig means the falloff is a dial, not a re-render.
+    rows=np.where(A[:,:,0].max(axis=1)>0.03)[0]
+    fy=int(rows.max())+2 if len(rows) else H
+    nh=min(H-fy, fy)
+    if nh>4:
+        ma=np.flipud(A[fy-nh:fy]); mr=np.flipud(rgb[fy-nh:fy])
+        fade=(np.clip(1-np.arange(nh)/float(nh)*1.45,0,1)**1.6)[:,None,None]
+        mr=cv2.GaussianBlur(mr,(0,0),2.2)
+        k=ma*fade*0.30
+        base[fy:fy+nh]=base[fy:fy+nh]*(1-k)+mr*k
+
+    # the smoke reflects off the same floor
+    mir=np.flipud(sm[:fy])[:H-fy]
+    if mir.shape[0]>0:
+        f2=np.clip(1-np.arange(mir.shape[0])/max(1,mir.shape[0])*1.15,0,1)[:,None,None]**1.3
+        base[fy:fy+mir.shape[0]]+=mir*f2*0.34
+
+    out=base*(1-A)+rgb*A
+
+    out*=SCRIM*VIG
+    img=Image.fromarray(np.clip(out,0,255).astype(np.uint8)).convert("RGBA")
+    dr=ImageDraw.Draw(img,"RGBA")
+    if t < NB*BEAT:
+        i=min(NB-1,int(t/BEAT)); u=(t-i*BEAT)/BEAT
+        a=min(oc(sg(u,0.06,0.24)),1.-sg(u,0.70,0.80))   # clear of the swipe
+        if a>.01:
+            nm,loc=SITES[i][1],SITES[i][2]
+            dr.rectangle([80,1690,80+int(190*oc(sg(u,0.06,0.30))),1695],fill=RED+(int(240*a),))
+            grit_text(img,[nm],fit([nm],56,track=2),WHT,80,1742,al=a,track=2)
+            grit_text(img,[loc],fit([loc],26,track=4),RED,80,1812,al=a*.95,track=4)
+    else:
+        u=(t-NB*BEAT)/CARD
+        av=oc(sg(u,0.10,0.40))
+        dr.rectangle([80,1690,80+int(190*oc(sg(u,0.08,0.36))),1695],fill=RED+(int(240*av),))
+        grit_text(img,["SIX REAL BUILDS"],fit(["SIX REAL BUILDS"],54,track=2),WHT,80,1742,
+                  al=av,track=2)
+        grit_text(img,["YOURS NEXT \u00b7 SYVEX.XYZ"],fit(["YOURS NEXT \u00b7 SYVEX.XYZ"],26,track=4),
+                  RED,80,1812,al=oc(sg(u,0.26,0.58))*.95,track=4)
+    a=np.asarray(img.convert("RGB")).astype(np.float32)
+    bl=np.clip(a-214.,0,None)
+    bi=Image.fromarray(np.clip(bl,0,255).astype(np.uint8)).resize((W//4,H//4),Image.BILINEAR)
+    bi=bi.filter(ImageFilter.GaussianBlur(9)).resize((W,H),Image.BILINEAR)
+    a+=np.asarray(bi).astype(np.float32)*0.26
+    a+=(np.random.RandomState(int(t*61)%89).rand(H,W,1).astype(np.float32)-.5)*6.
+    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
+
+if __name__=="__main__":
+    if sys.argv[1]=="sample":
+        import os; os.makedirs("sf",exist_ok=True)
+        for i,t in enumerate([float(x) for x in sys.argv[2:]]):
+            frame(t).save(f"sf/f{i:02d}.jpg",quality=93)
+        print("sample ok")
+    else:
+        import subprocess as sp
+        FF="/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"
+        p=sp.Popen([FF,"-v","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}",
+            "-r",str(FPS),"-i","-","-an","-c:v","libx264","-preset","medium","-crf","18",
+            "-pix_fmt","yuv420p","final_v.mp4"],stdin=sp.PIPE)
+        for k in range(N): p.stdin.write(frame(k/FPS).tobytes())
+        p.stdin.close(); p.wait(); print("FINAL_DONE",N)

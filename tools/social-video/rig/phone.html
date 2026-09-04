@@ -1,0 +1,186 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:transparent}canvas{display:block}</style>
+<canvas id="c"></canvas>
+<script type="importmap">
+{"imports":{"three":"./vendor/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {RoundedBoxGeometry} from './vendor/RoundedBoxGeometry.js';
+
+/* ---------------------------------------------------------------------------
+   The phone rig, ported from the Blender scene one-for-one.
+
+   Blender is Z-up, three.js is Y-up, so every Blender coordinate (x,y,z)
+   becomes (x, z, -y) here. Dimensions are the real handset in metres, scaled
+   by S purely so the numbers sit in a comfortable range for the depth buffer -
+   scaling everything uniformly leaves the projection identical.
+
+   This renders the phone with a near-black screen, so the plate carries only
+   the glass reflections. The website is warped onto the exported screen
+   corners afterwards at full resolution, which is what keeps type sharp.
+--------------------------------------------------------------------------- */
+
+const S = 10;
+const TH = 0.0042*S, WD = 0.0715*S, HT = 0.1470*S;   // thickness, width, height
+const PHZ = HT/2;                                     // sits on the floor
+const SW = WD*0.935, SH = HT*0.952;                   // the active screen
+const LENS = 64.0, SENSOR = 36.0;
+const NF = 150;                                       // frames in one full loop
+
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 540), H = +(q.get('h') || 960);
+// look knobs, overridable from the URL so a sweep is one render each
+const P = k => q.has(k) ? +q.get(k) : null;
+const RAIL_R  = P('railR')  ?? 0.16;   // rail roughness
+const RAIL_E  = P('railE')  ?? 2.2;    // rail env intensity
+const SCR_CR  = P('scrCR')  ?? 0.045;   // screen clearcoat roughness
+const SCR_E   = P('scrE')   ?? 2.6;    // screen env intensity
+const BACK_W  = P('backW')  ?? 0.955;  // how much of the rail band shows
+const EXPO    = P('expo')   ?? 1.15;
+const BOX_I   = P('boxI')   ?? 6.5;    // strip light behind camera - the sheen on the glass
+const BOX_W   = P('boxW')   ?? 4;
+const BOX_H   = P('boxH')   ?? 18;
+const BOX_X   = P('boxX')   ?? 11;
+const BOX_Y   = P('boxY')   ?? 8;
+const BOX_Z   = P('boxZ')   ?? 30;
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(1);
+renderer.setSize(W, H, false);
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = EXPO;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(
+  2*Math.atan((SENSOR/2)/LENS)*180/Math.PI,   // Blender fits 36mm to the long edge
+  W/H, 0.05, 200);
+
+/* --- environment ---------------------------------------------------------
+   Rasterisers have no bounced light, so reflections have to come from an
+   environment map. This builds one from a few emissive panels: a broad key,
+   a red rim on each side, and a dim cool fill. It is what makes the rail and
+   the glass read as metal and glass rather than as flat shaded boxes.        */
+function buildEnv(){
+  const s = new THREE.Scene();
+  s.background = new THREE.Color(0x05050a);
+  const panel = (col, int, w, h, pos, rot) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h),
+      new THREE.MeshBasicMaterial({color:col}));
+    m.material.color.multiplyScalar(int);
+    m.position.set(...pos); m.rotation.set(...rot); s.add(m);
+  };
+  panel(0xffffff, 3.2, 26, 34, [ 14,  16,  10], [0, -Math.PI/2.6, 0]);  // key
+  panel(0xff2a12, 2.6, 20, 40, [-20,   8, -12], [0,  Math.PI/2.8, 0]);  // red rim L
+  panel(0xff3a18, 2.0, 16, 40, [ 20,   6, -18], [0, -Math.PI/2.8, 0]);  // red rim R
+  panel(0x2a3a55, 0.9, 44, 26, [  0,  26,   0], [Math.PI/2, 0, 0]);     // cool sky
+  panel(0x000000, 1.0, 60, 60, [  0, -12,   0], [-Math.PI/2, 0, 0]);    // black floor
+  // A flat screen mirrors only what sits opposite it, so a broad soft source
+  // behind the camera is the only thing that puts a sheen across the glass.
+  // A radial-gradient texture gives it a soft edge instead of a hard rectangle.
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const g2 = cv.getContext('2d');
+  const grd = g2.createRadialGradient(128, 96, 8, 128, 128, 150);
+  grd.addColorStop(0, '#ffffff'); grd.addColorStop(0.45, '#c8ccd8');
+  grd.addColorStop(1, '#000000');
+  g2.fillStyle = grd; g2.fillRect(0, 0, 256, 256);
+  const soft = new THREE.CanvasTexture(cv);
+  soft.colorSpace = THREE.SRGBColorSpace;
+  const box = new THREE.Mesh(new THREE.PlaneGeometry(BOX_W, BOX_H),
+    new THREE.MeshBasicMaterial({map: soft, transparent: true,
+      color: new THREE.Color(BOX_I, BOX_I, BOX_I)}));
+  box.position.set(BOX_X, BOX_Y, BOX_Z);
+  box.lookAt(0, PHZ, 0);          // aim it at the handset, not along an axis
+  s.add(box);
+
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const env = pmrem.fromScene(s, 0.04).texture;
+  pmrem.dispose();
+  return env;
+}
+const envMap = buildEnv();
+scene.environment = envMap;
+if (q.get('debug') === 'env') scene.background = envMap;   // inspect the env directly
+if (q.get('debug') === 'chrome') {
+  const probe = new THREE.Mesh(new THREE.SphereGeometry(HT*0.30, 48, 32),
+    new THREE.MeshStandardMaterial({color:0xffffff, metalness:1.0, roughness:0.05,
+                                    envMap, envMapIntensity:1.0}));
+  probe.position.set(0, PHZ, 0); scene.add(probe);
+}
+
+/* --- the handset --------------------------------------------------------- */
+const phone = new THREE.Group();
+phone.position.set(0, PHZ, 0);
+scene.add(phone);
+
+const rail = new THREE.Mesh(
+  new RoundedBoxGeometry(WD, HT, TH, 6, TH*0.46),
+  new THREE.MeshPhysicalMaterial({
+    color:0x3a3a42, metalness:1.0, roughness:RAIL_R,
+    envMap, envMapIntensity:RAIL_E}));
+phone.add(rail);
+
+const back = new THREE.Mesh(
+  new RoundedBoxGeometry(WD*BACK_W, HT*(BACK_W+0.037), TH*0.92, 6, TH*0.40),
+  new THREE.MeshPhysicalMaterial({
+    color:0x08080a, metalness:0.6, roughness:0.42,
+    envMap, envMapIntensity:0.8}));
+phone.add(back);
+
+// The screen: black, but with a hard clearcoat so it mirrors the environment.
+// That reflection is the entire point of rendering the screen at all.
+const screen = new THREE.Mesh(
+  new THREE.PlaneGeometry(SW, SH),
+  new THREE.MeshPhysicalMaterial({
+    color:0x050506, metalness:0.0, roughness:0.5,
+    clearcoat:1.0, clearcoatRoughness:SCR_CR,
+    envMap, envMapIntensity:SCR_E}));
+screen.position.z = TH/2 + 0.0004*S;
+phone.add(screen);
+
+/* --- lights: small contributors on top of the environment ---------------- */
+const key = new THREE.DirectionalLight(0xfff2e8, 1.5); key.position.set(6,9,7); scene.add(key);
+const rim = new THREE.DirectionalLight(0xff3a1c, 2.2); rim.position.set(-8,3,-4); scene.add(rim);
+scene.add(new THREE.AmbientLight(0x0a0a12, 1.0));
+
+/* --- camera path: identical to the Blender orbit, and seamless ------------
+   A triangle wave through smoothstep means frame 0 and frame NF meet with
+   matching position and velocity, so the loop has no visible turnaround.     */
+const rad = d => d*Math.PI/180;
+const smoothstep = x => x*x*(3-2*x);
+const TGT = new THREE.Vector3(0, PHZ*0.86, 0);
+
+function pose(f){
+  const p = f/NF, tri = 1-Math.abs(2*p-1);
+  const ang  = rad(-21) + rad(42)*smoothstep(tri);
+  const dist = (0.415 - 0.020*smoothstep(tri))*S;
+  const y    = (0.086 + 0.012*Math.sin(2*Math.PI*p))*S;
+  camera.position.set(Math.sin(ang)*dist, y, Math.cos(ang)*dist);
+  camera.lookAt(TGT);
+  camera.updateMatrixWorld();
+}
+
+/* --- screen corners, in pixels, for the 2D composite --------------------- */
+const CORN = [
+  new THREE.Vector3(-SW/2,  SH/2, 0), new THREE.Vector3( SW/2,  SH/2, 0),
+  new THREE.Vector3( SW/2, -SH/2, 0), new THREE.Vector3(-SW/2, -SH/2, 0)];
+
+function corners(){
+  screen.updateMatrixWorld();
+  return CORN.map(v => {
+    const p = v.clone().applyMatrix4(screen.matrixWorld).project(camera);
+    return [(p.x*0.5+0.5)*W, (1-(p.y*0.5+0.5))*H];
+  });
+}
+
+window.NF = NF;
+window.setFrame = f => { pose(f); renderer.render(scene, camera); };
+window.getCorners = f => { pose(f); return corners(); };
+window.grab = () => canvas.toDataURL('image/png');
+window.setFrame(0);
+window.__ready = true;
+</script>
