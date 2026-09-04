@@ -28,10 +28,16 @@ _gy=np.arange(H,dtype=np.float32)[:,None,None]
 SCRIM=1.-np.clip((_gy-1370.)/530.,0,1)**1.35*0.86
 _vy,_vx=np.mgrid[0:H,0:W].astype(np.float32)
 _vr=np.sqrt(((_vx-W/2)/(W*.70))**2+((_vy-H*.46)/(H*.68))**2)
-VIG=(1.-np.clip((_vr-.42)/.80,0,1)**1.4*0.88)[:,:,None]
+# Haze drifting in FRONT of the handset. Without a foreground layer the
+# subject sits flatly on a backdrop; with one the frame has real depth.
+# Weighted away from the screen so it never costs legibility.
+FGW=(np.clip((_vy-H*0.40)/(H*0.62),0,1)**1.25*0.85
+     + np.clip((np.abs(_vx-W/2)/(W*0.5)-0.44)/0.56,0,1)**1.3*0.5)[:,:,None]
+FG_GAIN=float(os.environ.get("SYVEX_FG","0.55"))
+VIG=(1.-np.clip((_vr-.50)/.92,0,1)**1.3*float(os.environ.get("SYVEX_VIG","0.62")))[:,:,None]
 # The Blender plate carried an opaque floor that hid most of the smoke. The
 # WebGL plate is the handset alone, so the smoke needs pulling back to match.
-SMOKE_GAIN=float(os.environ.get("SYVEX_SMOKE","0.60"))
+SMOKE_GAIN=float(os.environ.get("SYVEX_SMOKE","0.95"))
 
 def io_(p): return 4*p*p*p if p<.5 else 1-((-2*p+2)**3)/2
 def oc(p): return 1-(1-p)**3
@@ -166,6 +172,8 @@ def frame(t):
 
     out=base*(1-A)+rgb*A
 
+    fg=smoke(t*1.9+37.0)*FG_GAIN
+    out=np.clip(out+fg*FGW*(1.-m*0.88),0,255)   # haze in front, clear of the screen
     out*=SCRIM*VIG
     img=Image.fromarray(np.clip(out,0,255).astype(np.uint8)).convert("RGBA")
     dr=ImageDraw.Draw(img,"RGBA")

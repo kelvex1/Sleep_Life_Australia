@@ -83,8 +83,10 @@ function buildEnv(){
     m.position.set(...pos); m.rotation.set(...rot); s.add(m);
   };
   panel(0xffffff, 3.2, 26, 34, [ 14,  16,  10], [0, -Math.PI/2.6, 0]);  // key
-  panel(0xff2a12, 2.6, 20, 40, [-20,   8, -12], [0,  Math.PI/2.8, 0]);  // red rim L
-  panel(0xff3a18, 2.0, 16, 40, [ 20,   6, -18], [0, -Math.PI/2.8, 0]);  // red rim R
+  // The handset has to catch the same colours the haze is made of, or it
+  // reads as an object pasted onto a backdrop rather than lit by the scene.
+  panel(0x1a9ec8, 2.4, 20, 40, [-20,   8, -12], [0,  Math.PI/2.8, 0]);  // teal rim L
+  panel(0xff3a18, 2.4, 16, 40, [ 20,   6, -18], [0, -Math.PI/2.8, 0]);  // crimson rim R
   panel(0x2a3a55, 0.9, 44, 26, [  0,  26,   0], [Math.PI/2, 0, 0]);     // cool sky
   panel(0x000000, 1.0, 60, 60, [  0, -12,   0], [-Math.PI/2, 0, 0]);    // black floor
   // A flat screen mirrors only what sits opposite it, so a broad soft source
@@ -174,6 +176,7 @@ phone.add(screen);
 /* --- lights: small contributors on top of the environment ---------------- */
 const key = new THREE.DirectionalLight(0xfff2e8, 1.5); key.position.set(6,9,7); scene.add(key);
 const rim = new THREE.DirectionalLight(0xff3a1c, 2.2); rim.position.set(-8,3,-4); scene.add(rim);
+const cool = new THREE.DirectionalLight(0x2ab0dc, 1.6); cool.position.set(9,2,-5); scene.add(cool);
 scene.add(new THREE.AmbientLight(0x0a0a12, 1.0));
 
 /* --- camera path: identical to the Blender orbit, and seamless ------------

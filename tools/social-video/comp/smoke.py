@@ -14,13 +14,16 @@ u,v=xx/SW,yy/SH
 def bed(cx,cy,r,sq=.70,p=1.7):
     d=np.sqrt((u-cx)**2+((v-cy)*sq)**2)
     return np.clip(1.-(d/r)**p,0,1)
-# syvex: crimson right, deep oxblood left, one ember warm low - black everywhere else
-BEDS=[((238,28,16), 1.06,.28,.74,2.0),
-      ((172,18,11),  .92,.70,.58,1.8),
-      ((116,11,9),  -.06,.42,.66,1.9),
-      ((196,44,14),  .52,1.06,.46,1.7),
-      (( 62, 7, 7),  .14,.82,.52,1.8),
-      ((148,16,10), 1.02,-.10,.50,1.8)]
+# Syvex crimson holds the right; a cold teal-blue answers it on the left.
+# Complementary colour is what stops a single-hue haze reading as flat - the
+# reference reel does exactly this with blue against red.
+BEDS=[((238, 28, 16), 1.06,.28,.74,2.0),   # crimson, right
+      ((198, 38, 14),  .88,.74,.60,1.8),   # crimson, lower right
+      (( 14,132,168), -.06,.40,.70,1.9),   # teal, left
+      (( 22, 74,176), -.02,.86,.56,1.8),   # blue, lower left
+      ((236, 92, 20),  .60,1.08,.44,1.7),  # warm ember along the floor
+      (( 96, 18, 12),  .38,.10,.52,1.9),   # oxblood bridging the two
+      ((150, 20, 12), 1.02,-.10,.50,1.8)]  # crimson, top right
 FIELDS=[(np.array(c,np.float32),bed(x,y,r,p=p)) for c,x,y,r,p in BEDS]
 CORE=bed(.50,.46,.56,.80,1.9)
 # smoke sits low and to the sides; the top of frame stays near-black
