@@ -37,7 +37,37 @@ def io_(p): return 4*p*p*p if p<.5 else 1-((-2*p+2)**3)/2
 def oc(p): return 1-(1-p)**3
 def sg(t,a,b): return max(0.,min(1.,(t-a)/(b-a)))
 
-SRCW,SRCH=620,1298          # matches the phone screen's own aspect (2.0934)
+SRCW,SRCH=1200,2512         # matches the phone screen's own aspect (2.0934).
+                            # Sized to the stitched pages so the crop is 1:1,
+                            # and ~1.9x the on-screen size so the warp
+                            # downsamples rather than magnifies.
+# The display has rounded corners. Clipping the site to a square rectangle is
+# what makes it read as pasted on rather than sitting behind the glass.
+SCR_R=int(SRCW*0.113)       # matches the rig's corner radius over the screen
+def _round_mask():
+    m=np.zeros((SRCH,SRCW),np.uint8)
+    cv2.rectangle(m,(SCR_R,0),(SRCW-SCR_R,SRCH),255,-1)
+    cv2.rectangle(m,(0,SCR_R),(SRCW,SRCH-SCR_R),255,-1)
+    for cx,cy in ((SCR_R,SCR_R),(SRCW-SCR_R,SCR_R),
+                  (SCR_R,SRCH-SCR_R),(SRCW-SCR_R,SRCH-SCR_R)):
+        cv2.circle(m,(cx,cy),SCR_R,255,-1)
+    return m
+ROUND=_round_mask()
+
+# A specular sweep travelling across the glass as the page flicks. It ties the
+# transition to the object instead of just sliding pixels behind it.
+_sx=np.linspace(0,1,SRCW,dtype=np.float32)[None,:]
+_sy=np.linspace(0,1,SRCH,dtype=np.float32)[:,None]
+def sweep(u):
+    c=-0.35+1.7*u                       # travels in from off-screen and out
+    d=(_sx*0.82+_sy*0.18)-c
+    return np.exp(-(d/0.13)**2)*(ROUND.astype(np.float32)/255.)
+
+def swipe_phase(t):
+    """0..1 across a flick, or None while a page is held"""
+    i=int(t/BEAT); local=t-i*BEAT; hold=BEAT-SWIPE
+    if i>=NB or local<=hold: return None
+    return (local-hold)/SWIPE
 ASP=SRCH/float(SRCW)
 
 def hero(key):
@@ -101,9 +131,16 @@ def frame(t):
     Mx=cv2.getPerspectiveTransform(src,q)
     warp=cv2.warpPerspective(cv2.cvtColor(screen(t),cv2.COLOR_BGR2RGB),Mx,(W,H),
                              flags=cv2.INTER_LANCZOS4,borderMode=cv2.BORDER_CONSTANT)
-    m=np.zeros((H,W),np.uint8); cv2.fillConvexPoly(m,q.astype(np.int32),255)
-    m=cv2.GaussianBlur(m,(0,0),1.2).astype(np.float32)[:,:,None]/255.
+    m=cv2.warpPerspective(ROUND,Mx,(W,H),flags=cv2.INTER_LINEAR,
+                          borderMode=cv2.BORDER_CONSTANT)
+    m=cv2.GaussianBlur(m,(0,0),0.7).astype(np.float32)[:,:,None]/255.
     rgb=rgb*(1-m)+np.clip(warp*0.97+rgb*0.45,0,255)*m   # keep the sheen, lose the wash
+    ph=swipe_phase(t)
+    if ph is not None:
+        gl=cv2.warpPerspective(sweep(ph),Mx,(W,H),flags=cv2.INTER_LINEAR,
+                               borderMode=cv2.BORDER_CONSTANT)[:,:,None]
+        rgb=np.clip(rgb+gl*np.array([96.,92.,104.],np.float32)*
+                    math.sin(math.pi*min(1.,ph*1.15)),0,255)
     A=np.maximum(A,m)
 
     sm=smoke(t*0.9)*SMOKE_GAIN
@@ -118,7 +155,7 @@ def frame(t):
         ma=np.flipud(A[fy-nh:fy]); mr=np.flipud(rgb[fy-nh:fy])
         fade=(np.clip(1-np.arange(nh)/float(nh)*1.45,0,1)**1.6)[:,None,None]
         mr=cv2.GaussianBlur(mr,(0,0),2.2)
-        k=ma*fade*0.30
+        k=ma*fade*0.34
         base[fy:fy+nh]=base[fy:fy+nh]*(1-k)+mr*k
 
     # the smoke reflects off the same floor

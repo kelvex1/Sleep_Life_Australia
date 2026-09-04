@@ -7,7 +7,7 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import {RoundedBoxGeometry} from './vendor/RoundedBoxGeometry.js';
+
 
 /* ---------------------------------------------------------------------------
    The phone rig, ported from the Blender scene one-for-one.
@@ -46,12 +46,12 @@ const BOX_X   = P('boxX')   ?? 11;
 const BOX_Y   = P('boxY')   ?? 8;
 const BOX_Z   = P('boxZ')   ?? 30;
 // camera path
-const ARC     = P('arc')    ?? 42;     // total degrees swept
-const ARC0    = P('arc0')   ?? -21;    // where the sweep starts
-const DIST0   = P('dist0')  ?? 0.415;  // start distance, in handset heights
-const DPULL   = P('dpull')  ?? 0.020;  // how much closer it gets at mid-sweep
-const RISE    = P('rise')   ?? 0.012;  // vertical bob
-const EYE     = P('eye')    ?? 0.086;  // eye height
+const ARC     = P('arc')    ?? 22;     // total degrees swept
+const ARC0    = P('arc0')   ?? -11;    // where the sweep starts
+const DIST0   = P('dist0')  ?? 0.360;  // start distance, in handset heights
+const DPULL   = P('dpull')  ?? 0.030;  // how much closer it gets at mid-sweep
+const RISE    = P('rise')   ?? 0.034;  // vertical bob
+const EYE     = P('eye')    ?? 0.070;  // eye height
 const TILT    = P('tilt')   ?? 0.86;   // where on the handset the camera looks
 
 const canvas = document.getElementById('c');
@@ -125,15 +125,35 @@ const phone = new THREE.Group();
 phone.position.set(0, PHZ, 0);
 scene.add(phone);
 
+const CORNER = (P('corner') ?? 0.115) * WD;   // display corner radius
+
+function roundedSlab(w, h, d, r, bevel){
+    // A phone is a rounded rectangle extruded, not a box with softened edges.
+    // Building the profile as a Shape gives a real corner radius in silhouette.
+    const sh = new THREE.Shape();
+    const x = -w/2, y = -h/2;
+    sh.moveTo(x + r, y);
+    sh.lineTo(x + w - r, y);      sh.absarc(x + w - r, y + r,     r, -Math.PI/2, 0);
+    sh.lineTo(x + w,     y + h - r); sh.absarc(x + w - r, y + h - r, r, 0, Math.PI/2);
+    sh.lineTo(x + r,     y + h);  sh.absarc(x + r,     y + h - r, r, Math.PI/2, Math.PI);
+    sh.lineTo(x,         y + r);  sh.absarc(x + r,     y + r,     r, Math.PI, Math.PI*1.5);
+    const g = new THREE.ExtrudeGeometry(sh, {
+        depth: d - bevel*2, bevelEnabled: true, bevelSegments: 5,
+        bevelSize: bevel, bevelThickness: bevel, curveSegments: 24});
+    g.translate(0, 0, -(d - bevel*2)/2);
+    g.computeVertexNormals();
+    return g;
+}
+
 const rail = new THREE.Mesh(
-  new RoundedBoxGeometry(WD, HT, TH, 6, TH*0.46),
+  roundedSlab(WD, HT, TH, CORNER, TH*0.16),
   new THREE.MeshPhysicalMaterial({
     color:0x3a3a42, metalness:1.0, roughness:RAIL_R,
     envMap, envMapIntensity:RAIL_E}));
 phone.add(rail);
 
 const back = new THREE.Mesh(
-  new RoundedBoxGeometry(WD*BACK_W, HT*(BACK_W+0.037), TH*0.92, 6, TH*0.40),
+  roundedSlab(WD*BACK_W, HT*(BACK_W+0.037), TH*0.92, CORNER*BACK_W, TH*0.12),
   new THREE.MeshPhysicalMaterial({
     color:0x08080a, metalness:0.6, roughness:0.42,
     envMap, envMapIntensity:0.8}));
@@ -141,8 +161,9 @@ phone.add(back);
 
 // The screen: black, but with a hard clearcoat so it mirrors the environment.
 // That reflection is the entire point of rendering the screen at all.
+const scrShape = (()=>{ const g=roundedSlab(SW, SH, 0.0001, CORNER*0.92, 0.00002); return g; })();
 const screen = new THREE.Mesh(
-  new THREE.PlaneGeometry(SW, SH),
+  scrShape,
   new THREE.MeshPhysicalMaterial({
     color:0x050506, metalness:0.0, roughness:0.5,
     clearcoat:1.0, clearcoatRoughness:SCR_CR,

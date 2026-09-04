@@ -4,3 +4,4 @@ rig/frames/
 rig/corners.json
 comp/sf/
 comp/*.mp4
+*.log
