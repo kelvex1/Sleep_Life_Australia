@@ -1,126 +1,146 @@
 #!/usr/bin/env python3
-"""Cut the testimonial reel: Aaron opens, then his voice carries across the work.
+"""The full testimonial: Aaron carries the whole piece, the work runs under him.
 
-The through-line is his audio. It runs unbroken from the first frame to the
-last, and only the picture cuts between him and the handset - which is what
-makes an intercut feel like one piece rather than two videos stapled together.
+His audio plays unbroken from the first frame to the last. Only the picture
+cuts, and every cut lands in a pause he actually leaves - detected from the
+waveform, not guessed - so the edit breathes where he breathes.
 
-Each cut lands inside a swell of the same haze that fills both shots, so the
-change of subject happens behind smoke rather than on a hard frame boundary.
+Everything is RGB end to end. Mixing cv2's BGR with comp's RGB is what put red
+and blue the wrong way round in the first pass.
 
-    python3 testimonial.py            # writes testimonial_v.mp4 (+ audio)
+    python3 testimonial.py
 """
-import os, sys, math, subprocess as sp
+import os, sys, math, wave, subprocess as sp
 import cv2, numpy as np
 HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 import comp
 from comp import W,H,FPS,smoke
 
-# Aaron is ZeroGrime's owner, so his own site leads the showcase - the viewer
-# hears him say it and sees the thing he is talking about.
-ORDER=[int(i) for i in os.environ.get("SYVEX_ORDER","5,0,1,2,3,4,6").split(",")]
-comp.SITES=[comp.SITES[i] for i in ORDER]
-comp.PAGES=[comp.PAGES[i] for i in ORDER]+[comp.PAGES[-1]]
-comp.BEAT=float(os.environ.get("SYVEX_TBEAT","2.04"))   # 10.2s of carousel = 5 whole sites
-
 FACE=os.environ.get("SYVEX_FACE","/tmp/testi/fr")
 VOICE=os.environ.get("SYVEX_VOICE","/tmp/testi/voice.wav")
 FF="/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2"
 NFACE=len([f for f in os.listdir(FACE) if f.endswith(".jpg")])
-DISS=0.34                      # transition length, seconds
+with wave.open(VOICE) as _w: VLEN=_w.getnframes()/float(_w.getframerate())
+CARD=3.0
+DISS=0.34
 
-# shot list: (kind, duration). "face" = Aaron, "site" = the handset carousel.
-# No fragment shots: a 0.7s tail resumed mid-site and showed Electeq twice.
-# The beat is shortened for this cut so five sites land whole inside the time
-# the carousel actually gets.
-SHOTS=[("face",3.6),("site",5.1),("face",2.4),("site",5.1),
-       ("face",2.9),("card",2.9)]
+# Aaron owns ZeroGrime, so his own site leads. The list repeats so the carousel
+# can keep cycling for as long as he is talking.
+ORDER=[int(i) for i in os.environ.get("SYVEX_ORDER","5,0,1,2,3,4,6").split(",")]
+_sites=[comp.SITES[i] for i in ORDER]
+_pages=[comp.PAGES[i] for i in ORDER]
+_card=comp.PAGES[-1]
+REPS=4
+comp.SITES=_sites*REPS
+comp.PAGES=_pages*REPS+[_card]
+comp.NB=len(comp.SITES)
+# 4.6s is two whole loops of the baked 2.3s clips, so the animated heroes play
+# through twice rather than being cut mid-loop
+comp.BEAT=float(os.environ.get("SYVEX_TBEAT","4.6"))
+
+def pauses(path, minlen=0.28):
+    """where he actually stops - cut points come from the waveform"""
+    with wave.open(path) as w:
+        sr=w.getframerate(); ch=w.getnchannels()
+        x=np.frombuffer(w.readframes(w.getnframes()),"<i2").astype(np.float32)/32768.
+    if ch>1: x=x.reshape(-1,ch).mean(1)
+    hop=int(sr*0.025); n=len(x)//hop
+    rms=np.sqrt((x[:n*hop].reshape(n,hop)**2).mean(1)+1e-12)
+    db=20*np.log10(rms+1e-9)
+    sp_=db>(np.percentile(db,15)+9)
+    runs=[]; i=0
+    while i<n:
+        if sp_[i]:
+            j=i
+            while j<n and (sp_[j] or (j+8<n and sp_[j:j+8].any())): j+=1
+            runs.append((i*0.025,j*0.025)); i=j
+        else: i+=1
+    return [((a+b)/2., b-a) for (_,a),(b,_) in zip(runs[:-1],runs[1:]) if b-a>=minlen]
+
+CUTS=[m for m,_ in pauses(VOICE)]
+
+def build_shots():
+    """alternate him and the work, snapping every cut to a pause"""
+    shots=[]; t=0.0; kind="face"; first=True
+    while t < VLEN-2.0:
+        want = 7.0 if first else (5.6 if kind=="site" else 5.0)
+        first=False
+        target=t+want
+        near=[c for c in CUTS if abs(c-target)<2.0 and c>t+2.6]
+        cut=min(near,key=lambda c:abs(c-target)) if near else min(target,VLEN)
+        cut=min(cut,VLEN)
+        shots.append((kind,round(cut-t,3)))
+        t=cut; kind = "site" if kind=="face" else "face"
+    if VLEN-t>0.4: shots.append(("face",round(VLEN-t,3)))
+    shots.append(("card",CARD))
+    return shots
+SHOTS=build_shots()
 DUR=sum(d for _,d in SHOTS)
 
 _vy,_vx=np.mgrid[0:H,0:W].astype(np.float32)
-# Aaron is phone footage upscaled 2.26x; a haze vignette on his edges shares the
-# environment with the handset shots so the background never jumps.
-EDGE=(np.clip((np.abs(_vx-W/2)/(W*0.5)-0.70)/0.30,0,1)**1.5*0.95
-      + np.clip((np.abs(_vy-H/2)/(H*0.5)-0.76)/0.24,0,1)**1.5*0.95)[:,:,None]
-EDGE=np.clip(EDGE,0,1)
+EDGE=np.clip((np.clip((np.abs(_vx-W/2)/(W*0.5)-0.70)/0.30,0,1)**1.5*0.95
+      + np.clip((np.abs(_vy-H/2)/(H*0.5)-0.76)/0.24,0,1)**1.5*0.95),0,1)[:,:,None]
 
 def shot_at(t):
-    """which shot, how far into it, and the local clock for that kind"""
-    acc=0.0; site_t=0.0
+    acc=0.0
     for kind,d in SHOTS:
-        if t < acc+d or (kind,d)==SHOTS[-1]:
-            return kind, t-acc, d, site_t
-        if kind=="site": site_t+=d
+        if t < acc+d: return kind, t-acc
         acc+=d
-    return SHOTS[-1][0], t-acc, SHOTS[-1][1], site_t
+    return SHOTS[-1][0], t-(acc-SHOTS[-1][1])
 
 def site_clock(t):
-    """seconds of handset footage elapsed by time t - the carousel only advances
-    while it is actually on screen, so no site is skipped behind Aaron"""
     acc=0.0; s=0.0
     for kind,d in SHOTS:
-        if t <= acc: break
-        span=min(d, t-acc)
+        if t<=acc: break
+        span=min(d,t-acc)
         if kind=="site": s+=span
         acc+=d
     return s
 
+_FC={}
 def face_frame(t):
-    k=min(NFACE-1,int(round(t*FPS)))
-    im=cv2.imread(os.path.join(FACE,f"a{k+1:04d}.jpg"))
-    if im is None: im=np.zeros((H,W,3),np.uint8)
-    if im.shape[0]!=H or im.shape[1]!=W:
-        im=cv2.resize(im,(W,H),interpolation=cv2.INTER_LANCZOS4)
-    a=im.astype(np.float32)
-    a=a*(1-EDGE*0.58)                      # sink his edges into the dark
-    sm=smoke(t*0.9)*comp.SMOKE_GAIN
-    a=np.clip(a+sm*EDGE*0.30,0,255)        # and let the same haze wrap them
-    return a
+    k=min(NFACE-1,max(0,int(round(t*FPS))))
+    if k not in _FC:
+        im=cv2.imread(os.path.join(FACE,f"a{k+1:05d}.jpg"))
+        if im is None: im=np.zeros((H,W,3),np.uint8)
+        if im.shape[:2]!=(H,W): im=cv2.resize(im,(W,H),interpolation=cv2.INTER_LANCZOS4)
+        _FC[k]=cv2.cvtColor(im,cv2.COLOR_BGR2RGB)          # into RGB immediately
+        if len(_FC)>40: _FC.pop(next(iter(_FC)))
+    a=_FC[k].astype(np.float32)*(1-EDGE*0.58)
+    return np.clip(a+smoke(t*0.9)*comp.SMOKE_GAIN*EDGE*0.30,0,255)
 
 def scene_frame(t):
-    kind,local,dur,_=shot_at(t)
+    kind,local=shot_at(t)
     if kind=="face": return face_frame(t)
-    st=site_clock(t)
-    if kind=="card": return np.asarray(comp.frame(comp.NB*comp.BEAT+local)).astype(np.float32)
-    return np.asarray(comp.frame(st)).astype(np.float32)
+    if kind=="card": return np.asarray(comp.frame(comp.NB*comp.BEAT+local),dtype=np.float32)
+    return np.asarray(comp.frame(site_clock(t)),dtype=np.float32)
 
-def boundaries():
-    b=[]; acc=0.0
-    for kind,d in SHOTS[:-1]:
-        acc+=d; b.append(acc)
-    return b
-BOUND=boundaries()
+BOUND=[]; _a=0.0
+for _k,_d in SHOTS[:-1]:
+    _a+=_d; BOUND.append(_a)
 
 def frame(t):
-    # dissolve across every shot change, inside a swell of the shared haze
     for b in BOUND:
-        if abs(t-b) < DISS/2:
+        if abs(t-b)<DISS/2:
             u=(t-(b-DISS/2))/DISS
-            # Dip through the haze rather than cross-fade. Blending two
-            # different subjects is muddy at the midpoint however short it is;
-            # dipping means they are never on screen together.
             k=math.sin(math.pi*u)**0.85
             out=scene_frame(t)*(1.-k*0.94)
-            out=np.clip(out+smoke(t*1.9+37.)*comp.FG_GAIN*k*1.9,0,255)
-            return out
+            return np.clip(out+smoke(t*1.9+37.)*comp.FG_GAIN*k*1.9,0,255)
     return scene_frame(t)
 
 if __name__=="__main__":
+    print("shots:", " ".join(f"{k}{d:.1f}" for k,d in SHOTS))
+    print(f"voice {VLEN:.2f}s  cut {DUR:.2f}s  carousel {site_clock(DUR):.1f}s"
+          f" = {site_clock(DUR)/comp.BEAT:.1f} beats")
     n=int(DUR*FPS)
     p=sp.Popen([FF,"-v","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}",
-        "-r",str(FPS),"-i","-","-an","-c:v","libx264","-preset","medium","-crf","18",
+        "-r",str(FPS),"-i","-","-an","-c:v","libx264","-preset","medium","-crf","19",
         "-pix_fmt","yuv420p","testimonial_mute.mp4"],stdin=sp.PIPE)
     for k in range(n):
-        f=np.clip(frame(k/FPS),0,255).astype(np.uint8)
-        p.stdin.write(cv2.cvtColor(f,cv2.COLOR_BGR2RGB).tobytes())
+        p.stdin.write(np.clip(frame(k/FPS),0,255).astype(np.uint8).tobytes())
     p.stdin.close(); p.wait()
-    # the voice is shorter than the cut, so no -shortest: it would truncate the
-    # video to the audio and drop the end card
-    import wave
-    with wave.open(VOICE) as w: vlen=w.getnframes()/float(w.getframerate())
     sp.run([FF,"-v","error","-y","-i","testimonial_mute.mp4","-i",VOICE,
             "-c:v","copy","-c:a","aac","-b:a","192k",
-            "-af",f"afade=t=out:st={max(0.0,vlen-1.1):.2f}:d=1.0",
+            "-af",f"afade=t=out:st={max(0.,VLEN-1.1):.2f}:d=1.0",
             "testimonial_v.mp4"],check=True)
-    print("voice %.2fs over a %.2fs cut"%(vlen,DUR))
     print("TESTI_DONE",n,"frames",round(DUR,2),"s")
