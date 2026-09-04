@@ -89,13 +89,21 @@ def shot_at(t):
     return SHOTS[-1][0], t-(acc-SHOTS[-1][1])
 
 def site_clock(t):
-    acc=0.0; s=0.0
+    """Each site shot starts on a fresh beat.
+
+    Letting the carousel simply resume meant every shot opened on the site the
+    previous one closed with, so the same site bookended a cut and the piece
+    read as repetitive. Rounding each shot up to whole beats costs a little
+    footage and removes the repeat entirely."""
+    acc=0.0; used=0.0
     for kind,d in SHOTS:
         if t<=acc: break
-        span=min(d,t-acc)
-        if kind=="site": s+=span
+        if kind=="site":
+            span=min(d,t-acc)
+            if t < acc+d: return used+span
+            used+=math.ceil(d/comp.BEAT-1e-6)*comp.BEAT
         acc+=d
-    return s
+    return used
 
 _FC={}
 def face_frame(t):
