@@ -3,7 +3,7 @@ HERE=os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0,HERE)
 from PIL import Image, ImageDraw, ImageFilter
 from grit import W,H,BK,RG,WHT,RED,grit_text,fit
 from smoke import smoke
-FPS=30; BEAT=2.5; CARD=3.0
+FPS=30; BEAT=2.3; CARD=3.0   # seven sites plus the card, inside 20s
 SWIPE=0.60                  # how long a flick between pages takes
 GUT=20                      # gutter between pages, like a real carousel
 # The rig - either the WebGL one (rig/render.py, seconds) or a Blender bake.
@@ -20,7 +20,8 @@ SITES=[("n1","ACE BALLERZ","WANNEROO · PERTH"),
        ("n3","FLOW SCAPES","PERTH METRO"),
        ("n4","ELECTEQ","PERTH"),
        ("n5","ADELAIDE CHAUFFEUR","ADELAIDE · SA"),
-       ("n6","ZEROGRIME SOLUTIONS","BUNBURY · WA")]
+       ("n6","ZEROGRIME SOLUTIONS","BUNBURY · WA"),
+       ("n7","MOVING WITH MOJO'S","REMOVALISTS · PERTH")]
 NB=len(SITES)
 DUR=NB*BEAT+CARD; N=int(DUR*FPS)
 # type always lands on clean black - a soft floor scrim, never a hard band
@@ -83,13 +84,31 @@ def hero(key):
     x0=(PW-ww)//2
     return cv2.resize(pg[0:wh, x0:x0+ww],(SRCW,SRCH),interpolation=cv2.INTER_AREA)
 
-PAGES=[hero(k) for k,_,_ in SITES]
-PAGES.append(cv2.cvtColor(np.asarray(Image.open(os.path.join(HERE,"endscreen.png")).convert("RGB")),
-                          cv2.COLOR_RGB2BGR))
-print("pages ready",len(PAGES))
-GAP=np.zeros((SRCH,GUT,3),np.uint8)
-STRIP=np.hstack([x for p in PAGES for x in (p,GAP)])[:,:-GUT]   # one long carousel
+def load_page(key):
+    """A site is either a stitched still or, where the hero plays video, a run
+    of baked frames. A frozen hero is the difference between a screen that is
+    alive and one that is a photograph."""
+    vd=os.path.join(PAGEDIR,key+"_v")
+    if os.path.isdir(vd):
+        n=len([f for f in os.listdir(vd) if f.endswith(".jpg")])
+        if n: return ("vid",vd,n)
+    return ("img",hero(key),1)
+
+PAGES=[load_page(k) for k,_,_ in SITES]
+PAGES.append(("img",cv2.cvtColor(np.asarray(Image.open(os.path.join(HERE,"endscreen.png"))
+                                            .convert("RGB")),cv2.COLOR_RGB2BGR),1))
+print("pages ready",len(PAGES),
+      "(%d live)"%sum(1 for p in PAGES if p[0]=="vid"))
 PITCH=SRCW+GUT
+_VC={}
+def page_img(i,k):
+    kind,a,n=PAGES[i]
+    if kind=="img": return a
+    j=k%n; key=(i,j)
+    if key not in _VC:
+        _VC[key]=cv2.imread(os.path.join(a,f"f{j:04d}.jpg"))
+        if len(_VC)>26: _VC.pop(next(iter(_VC)))
+    return _VC[key]
 
 def flick(u):
     """a swipe that eases off the finger and settles - symmetric, so peak speed
@@ -105,12 +124,16 @@ def page_pos(t):
     return i+flick((local-hold)/SWIPE)
 
 def screen(t):
-    """the carousel at time t, with real motion blur across the frame's exposure"""
-    # crisp, the way a phone display actually presents a swipe - any blur here
-    # reads as ghosting rather than motion
-    o=int(round(page_pos(t)*PITCH))
-    o=max(0,min(STRIP.shape[1]-SRCW,o))
-    return STRIP[:,o:o+SRCW]
+    """the carousel at time t - two pages at most are ever visible"""
+    x=page_pos(t); i=int(x); f=x-i
+    k=int(round(t*FPS))
+    buf=np.zeros((SRCH,SRCW,3),np.uint8)        # the gutter stays black
+    off=int(round(f*PITCH))
+    for pi,x0 in ((i,-off),(i+1,PITCH-off)):
+        if pi>=len(PAGES): continue
+        a=max(0,x0); b=min(SRCW,x0+SRCW)
+        if b>a: buf[:,a:b]=page_img(pi,k)[:,a-x0:b-x0]
+    return buf
 
 PLATE={}
 def plate(k):
@@ -189,7 +212,7 @@ def frame(t):
         u=(t-NB*BEAT)/CARD
         av=oc(sg(u,0.10,0.40))
         dr.rectangle([80,1690,80+int(190*oc(sg(u,0.08,0.36))),1695],fill=RED+(int(240*av),))
-        grit_text(img,["SIX REAL BUILDS"],fit(["SIX REAL BUILDS"],54,track=2),WHT,80,1742,
+        grit_text(img,["SEVEN REAL BUILDS"],fit(["SEVEN REAL BUILDS"],54,track=2),WHT,80,1742,
                   al=av,track=2)
         grit_text(img,["YOURS NEXT \u00b7 SYVEX.XYZ"],fit(["YOURS NEXT \u00b7 SYVEX.XYZ"],26,track=4),
                   RED,80,1812,al=oc(sg(u,0.26,0.58))*.95,track=4)

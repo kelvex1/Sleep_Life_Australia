@@ -6,3 +6,6 @@ comp/sf/
 comp/*.mp4
 *.log
 comp/sm*.jpg
+pages/*_v/
+comp/v*.log
+comp/fullhq.log
