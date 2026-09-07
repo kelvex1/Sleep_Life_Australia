@@ -31,7 +31,14 @@ external asset. The geometry is defined in metres from real dimensions (5.33m lo
 1.855m wide, 1.815m high, 3.085m wheelbase, 0.80m tyres), then lit, depth-sorted and
 projected onto a 2D canvas by hand.
 
-Two decisions worth knowing if you touch it:
+Three decisions worth knowing if you touch it:
+
+- **An extruded side profile, not a stack of boxes.** The body comes from one closed
+  2D profile swept across the width, so the silhouette carries the wheel arches, the
+  raked windscreen and the bonnet line exactly as they appear on the real side view.
+  The profile is traversed with the body on its left, so each wall's outward normal is
+  its edge direction turned a quarter turn clockwise. Boxes are only used for the
+  bolt-on parts: bull bar, light bar, mirrors, steps, snorkel, tow bar, tray rails.
 
 - **Surfaces, not wireframe.** A wireframe of a solid object shows every hidden edge
   at once and reads as a pile of boxes. Faces are filled and drawn back to front
@@ -79,6 +86,14 @@ two sources:
 To pin the footage: download the take you want, save it as `public/rmae/hero.mp4`, and
 it takes over with no code change. To preview a different take instead, change the
 `HERO_REMOTE` export in `_lib/media.ts`.
+
+## The map
+
+The "Mobile most days" section carries his real Google Maps embed, with the workshop
+address, hours and contact beside it. The frame sits over a styled panel: if the embed
+cannot load, the panel shows the address and a link that opens the real map, so the
+slot never reads as broken. The artifact preview always shows that panel, because its
+sandbox blocks third-party frames.
 
 ## Photography
 

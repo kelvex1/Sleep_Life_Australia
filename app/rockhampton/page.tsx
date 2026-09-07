@@ -11,6 +11,7 @@ import { Process } from './_components/Process'
 import { Gallery } from './_components/Gallery'
 import { Reviews } from './_components/Reviews'
 import { Area } from './_components/Area'
+import { FindUs } from './_components/FindUs'
 import { Closing } from './_components/Closing'
 import { useReveal } from './_lib/useReveal'
 
@@ -37,6 +38,7 @@ export default function RockhamptonPage() {
           <Gallery />
           <Reviews />
           <Area />
+          <FindUs />
           <Closing />
         </div>
       </div>

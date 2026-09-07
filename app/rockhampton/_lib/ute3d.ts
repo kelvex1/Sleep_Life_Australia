@@ -36,7 +36,9 @@ export const HOTSPOTS: Hotspot[] = [
 
 /* ---------- geometry ---------- */
 
-type Face = { idx: number[]; n: Vec3; edge: number }
+export type Material = 'body' | 'glass' | 'tyre' | 'trim' | 'lampF' | 'lampR'
+
+type Face = { idx: number[]; n: Vec3; mat: Material; edge: number }
 
 const V: Vec3[] = []
 const F: Face[] = []
@@ -46,14 +48,14 @@ function vert(x: number, y: number, z: number) {
   return V.length - 1
 }
 
-function centroid(idx: number[]): Vec3 {
-  let x = 0, y = 0, z = 0
-  for (const i of idx) { x += V[i][0]; y += V[i][1]; z += V[i][2] }
-  return [x / idx.length, y / idx.length, z / idx.length]
+/** Face with an explicit outward normal. */
+function faceN(idx: number[], n: Vec3, mat: Material = 'body', edge = 1) {
+  const len = Math.hypot(n[0], n[1], n[2]) || 1
+  F.push({ idx, n: [n[0] / len, n[1] / len, n[2] / len], mat, edge })
 }
 
-/** Adds a face with its normal turned to point away from the part's centre. */
-function face(idx: number[], origin: Vec3, edge = 1) {
+/** Face whose normal is turned to point away from the part's centre. */
+function face(idx: number[], origin: Vec3, mat: Material = 'body', edge = 1) {
   const [ax, ay, az] = V[idx[0]]
   const [bx, by, bz] = V[idx[1]]
   const [cx, cy, cz] = V[idx[2]]
@@ -62,40 +64,61 @@ function face(idx: number[], origin: Vec3, edge = 1) {
     (bz - az) * (cx - ax) - (bx - ax) * (cz - az),
     (bx - ax) * (cy - ay) - (by - ay) * (cx - ax),
   ]
-  const len = Math.hypot(n[0], n[1], n[2]) || 1
-  n = [n[0] / len, n[1] / len, n[2] / len]
-  const c = centroid(idx)
-  const out: Vec3 = [c[0] - origin[0], c[1] - origin[1], c[2] - origin[2]]
+  let cxx = 0, cyy = 0, czz = 0
+  for (const i of idx) { cxx += V[i][0]; cyy += V[i][1]; czz += V[i][2] }
+  const k = idx.length
+  const out: Vec3 = [cxx / k - origin[0], cyy / k - origin[1], czz / k - origin[2]]
   if (n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0) n = [-n[0], -n[1], -n[2]]
-  F.push({ idx, n, edge })
+  faceN(idx, n, mat, edge)
 }
 
-/** An axis-aligned box, optionally tapered toward the top (roof, greenhouse). */
+/**
+ * Extrudes a closed 2D side profile across the width of the vehicle.
+ *
+ * This is what makes it read as a ute rather than a stack of boxes: the
+ * silhouette carries the wheel arches, the raked windscreen and the bonnet
+ * line, exactly as they appear on the real side view. The profile is
+ * traversed with the body on its left, so each wall's outward normal is the
+ * edge direction turned a quarter turn clockwise.
+ */
+function extrude(profile: [number, number][], halfW: number, mat: Material = 'body', edge = 1) {
+  const left = profile.map(([z, y]) => vert(-halfW, y, z))
+  const right = profile.map(([z, y]) => vert(halfW, y, z))
+  faceN(left.slice().reverse(), [-1, 0, 0], mat, edge)
+  faceN(right.slice(), [1, 0, 0], mat, edge)
+  for (let i = 0; i < profile.length; i++) {
+    const j = (i + 1) % profile.length
+    const dz = profile[j][0] - profile[i][0]
+    const dy = profile[j][1] - profile[i][1]
+    faceN([left[i], right[i], right[j], left[j]], [0, -dz, dy], mat, edge)
+  }
+}
+
+/** An axis-aligned box, optionally tapered toward the top. */
 function box(
   x: number, y0: number, y1: number, z0: number, z1: number,
-  edge = 1, topX = x, topZ0 = z0, topZ1 = z1, offX = 0,
+  mat: Material = 'body', edge = 1, topX = x, offX = 0,
 ) {
   const b = [
     vert(offX - x, y0, z0), vert(offX + x, y0, z0),
     vert(offX + x, y0, z1), vert(offX - x, y0, z1),
   ]
   const t = [
-    vert(offX - topX, y1, topZ0), vert(offX + topX, y1, topZ0),
-    vert(offX + topX, y1, topZ1), vert(offX - topX, y1, topZ1),
+    vert(offX - topX, y1, z0), vert(offX + topX, y1, z0),
+    vert(offX + topX, y1, z1), vert(offX - topX, y1, z1),
   ]
   const o: Vec3 = [offX, (y0 + y1) / 2, (z0 + z1) / 2]
-  face([b[0], b[1], b[2], b[3]], o, edge)
-  face([t[0], t[1], t[2], t[3]], o, edge)
-  face([b[3], b[2], t[2], t[3]], o, edge)
-  face([b[0], b[1], t[1], t[0]], o, edge)
-  face([b[0], b[3], t[3], t[0]], o, edge)
-  face([b[1], b[2], t[2], t[1]], o, edge)
+  face([b[0], b[1], b[2], b[3]], o, mat, edge)
+  face([t[0], t[1], t[2], t[3]], o, mat, edge)
+  face([b[3], b[2], t[2], t[3]], o, mat, edge)
+  face([b[0], b[1], t[1], t[0]], o, mat, edge)
+  face([b[0], b[3], t[3], t[0]], o, mat, edge)
+  face([b[1], b[2], t[2], t[1]], o, mat, edge)
 }
 
 const HALF = 0.9275
 const SILL = 0.45
 const BELT = 1.22
-const BONNET = 1.16
 const ROOF = 1.815
 const Z_NOSE = 2.4425
 const Z_COWL = 0.6425
@@ -106,28 +129,87 @@ const Z_TAIL = -2.8825
 const AXLE_F = 1.5425
 const AXLE_R = -1.5425
 const TYRE = 0.4
+const ARCH = 0.52
 
-// front body: guards and bonnet
-box(HALF, SILL, BONNET, Z_COWL, Z_NOSE)
-// cab lower, up to the window line
-box(HALF, SILL, BELT, Z_CAB_R, Z_COWL)
-// greenhouse: narrower and shorter at the roof, which gives the screen its rake
-box(0.9, BELT, ROOF, Z_CAB_R, Z_COWL, 1, 0.78, Z_ROOF_R, Z_ROOF_F)
-// tray, then the raised side rails so it reads as an open tub
-box(HALF, SILL, 0.98, Z_TAIL, Z_CAB_R)
-box(0.075, 0.98, 1.12, Z_TAIL, Z_CAB_R, 0.6, 0.075, Z_TAIL, Z_CAB_R, -HALF + 0.075)
-box(0.075, 0.98, 1.12, Z_TAIL, Z_CAB_R, 0.6, 0.075, Z_TAIL, Z_CAB_R, HALF - 0.075)
-box(HALF, 0.98, 1.12, Z_TAIL, Z_TAIL + 0.13, 0.6)
-box(HALF, 0.98, 1.12, Z_CAB_R - 0.13, Z_CAB_R, 0.6)
-// bull bar, roof light bar, side steps, tow bar, snorkel
-box(0.92, 0.5, 1.04, Z_NOSE, Z_NOSE + 0.22, 0.6)
-box(0.55, ROOF, ROOF + 0.1, -0.17, 0.01, 0.6)
-box(0.06, 0.38, 0.46, -1.15, 0.6, 0.6, 0.06, -1.15, 0.6, -0.98)
-box(0.06, 0.38, 0.46, -1.15, 0.6, 0.6, 0.06, -1.15, 0.6, 0.98)
-box(0.17, 0.33, 0.47, Z_TAIL - 0.18, Z_TAIL, 0.6)
-box(0.07, BONNET, 1.87, 0.5, 0.66, 0.6, 0.07, 0.5, 0.66, 0.9)
+/** Half a wheel arch, cut up into the sill. */
+function arch(centre: number): [number, number][] {
+  const pts: [number, number][] = []
+  const N = 9
+  for (let i = 0; i <= N; i++) {
+    const a = Math.PI * (1 - i / N)
+    pts.push([centre + Math.cos(a) * ARCH, SILL + Math.sin(a) * ARCH])
+  }
+  return pts
+}
 
-/** A wheel: a faceted cylinder lying on the x axis. */
+// The side profile, traversed front face up, along the top to the rear, down
+// the tail, then forward along the sill through both arches.
+const PROFILE: [number, number][] = [
+  [Z_NOSE, SILL],
+  [Z_NOSE, 1.2],
+  [2.34, 1.25],
+  [0.78, 1.26],
+  [Z_COWL, BELT],
+  [Z_CAB_R, BELT],
+  [Z_CAB_R, 1.12],
+  [Z_TAIL, 1.12],
+  [Z_TAIL, SILL],
+  [AXLE_R - ARCH - 0.02, SILL],
+  ...arch(AXLE_R),
+  [AXLE_F - ARCH - 0.02, SILL],
+  ...arch(AXLE_F),
+]
+extrude(PROFILE, HALF)
+
+// Greenhouse: raked screen, roof, rear pillar. Narrower than the body, and
+// glass so it reads as a cabin rather than another block.
+extrude(
+  [
+    [Z_COWL, BELT],
+    [Z_ROOF_F, ROOF],
+    [Z_ROOF_R, ROOF],
+    [Z_CAB_R, BELT],
+  ],
+  0.8,
+  'glass',
+)
+
+// Roof panel: the greenhouse is glass, but the roof itself is steel.
+box(0.81, ROOF - 0.03, ROOF + 0.02, Z_ROOF_R - 0.02, Z_ROOF_F + 0.02, 'body', 0.9)
+
+// Pillars and the beltline, sitting just proud of the glass on each flank.
+for (const sx of [-1, 1]) {
+  const px = sx * 0.815
+  box(0.035, BELT, ROOF - 0.02, Z_COWL - 0.06, Z_COWL, 'body', 0.6, 0.035, px)   // A pillar
+  box(0.035, BELT, ROOF - 0.06, 0.02, 0.1, 'body', 0.6, 0.035, px)               // B pillar
+  box(0.035, BELT, ROOF - 0.02, Z_CAB_R, Z_CAB_R + 0.06, 'body', 0.6, 0.035, px) // C pillar
+  box(0.03, BELT - 0.05, BELT, Z_CAB_R, Z_COWL, 'trim', 0.5, 0.03, sx * 0.93)    // beltline
+  box(0.055, 0.86, 0.94, -0.34, -0.14, 'trim', 0.5, 0.055, sx * 0.95)            // rear handle
+  box(0.055, 0.86, 0.94, 0.16, 0.36, 'trim', 0.5, 0.055, sx * 0.95)              // front handle
+  box(0.02, 0.9, 1.02, 0.42, 0.5, 'trim', 0.5, 0.02, sx * 1.0)                   // mirror stalk
+  box(0.03, 0.94, 1.16, 0.4, 0.56, 'body', 0.6, 0.03, sx * 1.06)                 // mirror head
+}
+
+// Tray tub: rails around an open bed.
+box(0.075, 1.12, 1.34, Z_TAIL, Z_CAB_R, 'body', 0.7, 0.075, -HALF + 0.075)
+box(0.075, 1.12, 1.34, Z_TAIL, Z_CAB_R, 'body', 0.7, 0.075, HALF - 0.075)
+box(HALF, 1.12, 1.34, Z_TAIL, Z_TAIL + 0.14, 'body', 0.7)
+box(HALF, 1.12, 1.34, Z_CAB_R - 0.14, Z_CAB_R, 'body', 0.7)
+
+// Lamps, grille, bar work and the rest of the fit-out.
+for (const sx of [-1, 1]) {
+  box(0.2, 0.92, 1.1, Z_NOSE - 0.02, Z_NOSE + 0.01, 'lampF', 0.5, 0.2, sx * 0.68)
+  box(0.11, 0.62, 1.02, Z_TAIL - 0.01, Z_TAIL + 0.02, 'lampR', 0.5, 0.11, sx * 0.79)
+}
+box(0.62, 0.66, 0.9, Z_NOSE - 0.02, Z_NOSE + 0.01, 'trim', 0.5)          // grille
+box(0.9, 0.5, 0.92, Z_NOSE + 0.04, Z_NOSE + 0.2, 'trim', 0.6)         // bull bar
+box(0.55, ROOF, ROOF + 0.1, -0.17, 0.01, 'trim', 0.6)                    // roof light bar
+box(0.06, 0.38, 0.46, -1.15, 0.6, 'trim', 0.5, 0.06, -0.98)              // side steps
+box(0.06, 0.38, 0.46, -1.15, 0.6, 'trim', 0.5, 0.06, 0.98)
+box(0.17, 0.33, 0.47, Z_TAIL - 0.2, Z_TAIL, 'trim', 0.5)                 // tow bar
+box(0.07, 1.2, 1.87, 0.5, 0.66, 'trim', 0.6, 0.07, 0.9)                  // snorkel
+
+/** A wheel: a faceted cylinder lying on the x axis, with a lighter rim face. */
 function wheel(cx: number, cz: number) {
   const N = 14
   const hw = 0.15
@@ -143,10 +225,17 @@ function wheel(cx: number, cz: number) {
   }
   for (let i = 0; i < N; i++) {
     const j = (i + 1) % N
-    face([inner[i], inner[j], outer[j], outer[i]], o, 0.32)
+    face([inner[i], inner[j], outer[j], outer[i]], o, 'tyre', 0.3)
   }
-  face(inner.slice(), o, 0.45)
-  face(outer.slice(), o, 0.45)
+  faceN(inner.slice().reverse(), [cx < 0 ? -1 : -1, 0, 0], 'tyre', 0.4)
+  faceN(outer.slice(), [1, 0, 0], 'tyre', 0.4)
+  // rim, inset from the tyre so it catches the light separately
+  const rim: number[] = []
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2
+    rim.push(vert(cx + (cx < 0 ? -hw - 0.005 : hw + 0.005), TYRE + Math.sin(a) * 0.26, cz + Math.cos(a) * 0.26))
+  }
+  faceN(cx < 0 ? rim.slice().reverse() : rim.slice(), [cx < 0 ? -1 : 1, 0, 0], 'trim', 0.5)
 }
 for (const cx of [-0.805, 0.805]) {
   wheel(cx, AXLE_F)
@@ -164,16 +253,26 @@ export type Scene = {
 }
 
 const LOOK_Y = 0.92
-const DIST = 7.8
+const DIST = 11.5
 /** Anything closer than this is behind the lens and gets clipped away. */
 const NEAR = 0.6
 /** Key light in view space: high, slightly left, and toward the camera. */
 const LIGHT: Vec3 = [-0.34, 0.74, -0.58]
 
+/** Ambient rgb, then the amount each channel gains at full light. */
+const MATERIAL: Record<Material, [number, number, number, number, number, number]> = {
+  body:  [21, 27, 37, 44, 56, 70],
+  glass: [7, 15, 23, 10, 30, 46],
+  tyre:  [10, 11, 14, 13, 15, 18],
+  trim:  [24, 29, 37, 34, 42, 52],
+  lampF: [46, 34, 16, 150, 108, 44],
+  lampR: [48, 15, 16, 132, 34, 36],
+}
+
 export function createUteScene(canvas: HTMLCanvasElement, reduced = false): Scene {
   const ctx = canvas.getContext('2d')!
-  let yaw = 2.42
-  let pitch = 0.26
+  let yaw = 2.36
+  let pitch = 0.36
   let dragging = false
   let paused = false
   let lastX = 0
@@ -209,7 +308,8 @@ export function createUteScene(canvas: HTMLCanvasElement, reduced = false): Scen
   }
 
   function flatten(v: View) {
-    const f = Math.min(w, h * 1.55) * 0.94
+    // a long lens: less wide-angle stretch, so proportions read true
+    const f = Math.min(w, h * 1.55) * 1.38
     return { x: w / 2 + (f * v.x) / v.z, y: h / 2 - (f * v.y) / v.z }
   }
 
@@ -282,10 +382,11 @@ export function createUteScene(canvas: HTMLCanvasElement, reduced = false): Scen
       // faces turned away from the camera are the far side of a closed shape
       if (n[2] > 0.02) continue
       const lam = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2])
-      const cue = Math.max(0.45, Math.min(1, (DIST + 3.6 - z) / 6.2))
-      const r = Math.round((17 + lam * 36) * cue)
-      const g = Math.round((22 + lam * 48) * cue)
-      const b = Math.round((31 + lam * 62) * cue)
+      const cue = Math.max(0.5, Math.min(1, (DIST + 3.2 - z) / 6.0))
+      const m = MATERIAL[f.mat]
+      const r = Math.round((m[0] + lam * m[3]) * cue)
+      const g = Math.round((m[1] + lam * m[4]) * cue)
+      const b = Math.round((m[2] + lam * m[5]) * cue)
 
       ctx.beginPath()
       for (let i = 0; i < f.idx.length; i++) {
@@ -296,7 +397,9 @@ export function createUteScene(canvas: HTMLCanvasElement, reduced = false): Scen
       ctx.closePath()
       ctx.fillStyle = `rgb(${r},${g},${b})`
       ctx.fill()
-      ctx.strokeStyle = `rgba(198,228,242,${(0.1 + 0.34 * f.edge * cue).toFixed(3)})`
+      const stroke =
+        f.mat === 'lampF' ? '255,186,110' : f.mat === 'lampR' ? '255,132,132' : '198,228,242'
+      ctx.strokeStyle = `rgba(${stroke},${(0.1 + 0.34 * f.edge * cue).toFixed(3)})`
       ctx.lineWidth = f.edge > 0.9 ? 1.15 : 1
       ctx.stroke()
     }
@@ -318,7 +421,7 @@ export function createUteScene(canvas: HTMLCanvasElement, reduced = false): Scen
   function onMove(e: PointerEvent) {
     if (!dragging) return
     yaw += (e.clientX - lastX) * 0.008
-    pitch = Math.max(-0.05, Math.min(0.6, pitch + (e.clientY - lastY) * 0.004))
+    pitch = Math.max(0.04, Math.min(0.7, pitch + (e.clientY - lastY) * 0.004))
     lastX = e.clientX
     lastY = e.clientY
     schedule()
