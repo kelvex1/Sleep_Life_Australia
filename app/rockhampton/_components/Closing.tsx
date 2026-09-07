@@ -79,6 +79,7 @@ export function Closing() {
               <h4>Company</h4>
               <ul>
                 <li><a href="#work">What we fix</a></li>
+                <li><a href="#gallery">Our work</a></li>
                 <li><a href="#process">How it works</a></li>
                 <li><a href="#reviews">Reviews</a></li>
                 <li><a href="#area">Service area</a></li>
