@@ -542,30 +542,61 @@
   box-shadow: inset 0 0 0 1px var(--line);
   overflow: hidden;
 }
-.rmae-rig-svg { width: 100%; height: auto; }
-.rmae-rig-svg .rmae-rig-body {
-  fill: rgba(255,255,255,.018); stroke: rgba(255,255,255,.58);
-  stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round;
+/* the 3D stage replaces the old flat drawing */
+.rmae-stage {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(70% 60% at 50% 42%, rgba(56,225,255,.07), transparent 68%),
+    linear-gradient(180deg, rgba(6,7,10,.5), rgba(6,7,10,.85));
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: grab;
+  touch-action: pan-y;
 }
-.rmae-rig-svg .rmae-rig-detail {
-  fill: none; stroke: rgba(255,255,255,.24); stroke-width: 1.4;
-  stroke-linejoin: round; stroke-linecap: round;
+.rmae-stage:active { cursor: grabbing; }
+.rmae-stage-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.rmae-stage-hint, .rmae-stage-tag {
+  position: absolute; z-index: 4; display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--font-mono); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase;
+  padding: .35rem .6rem; border-radius: 999px; pointer-events: none;
 }
-.rmae-rig-svg .rmae-rig-handle { stroke: rgba(255,255,255,.4); stroke-width: 2.4; stroke-linecap: round; }
-.rmae-rig-svg .rmae-rig-glass { fill: rgba(56,225,255,.055); stroke: rgba(255,255,255,.2); stroke-width: 1.3; }
-.rmae-rig-svg .rmae-rig-tyre { fill: rgba(0,0,0,.35); stroke: rgba(255,255,255,.58); stroke-width: 2.4; }
-.rmae-rig-svg .rmae-rig-rim { fill: none; stroke: rgba(255,255,255,.34); stroke-width: 1.6; }
-.rmae-rig-svg .rmae-rig-spoke { stroke: rgba(255,255,255,.2); stroke-width: 1.3; stroke-linecap: round; }
-.rmae-rig-svg .rmae-rig-ground { stroke: rgba(255,255,255,.14); stroke-width: 1.2; }
-.rmae-hot { cursor: pointer; }
-.rmae-hot circle.rmae-hot-core { fill: var(--amber); }
-.rmae-hot circle.rmae-hot-ring { fill: none; stroke: var(--amber); stroke-width: 1.4; opacity: .8; transform-origin: center; animation: rmae-hot 2.6s ease-out infinite; }
-.rmae-hot:nth-of-type(2) circle.rmae-hot-ring { animation-delay: .5s; }
-.rmae-hot:nth-of-type(3) circle.rmae-hot-ring { animation-delay: 1s; }
-.rmae-hot:nth-of-type(4) circle.rmae-hot-ring { animation-delay: 1.5s; }
-.rmae-hot:nth-of-type(5) circle.rmae-hot-ring { animation-delay: 2s; }
-@keyframes rmae-hot { 0% { r: 6; opacity: .85; } 100% { r: 20; opacity: 0; } }
-.rmae-hot.rmae-hot-on circle.rmae-hot-core { fill: var(--volt); }
+.rmae-stage-hint { left: .8rem; bottom: .8rem; color: var(--text-3); background: rgba(6,7,10,.6); }
+.rmae-stage-tag {
+  right: .8rem; top: .8rem; color: var(--volt);
+  background: rgba(56,225,255,.08); box-shadow: inset 0 0 0 1px rgba(56,225,255,.22);
+}
+
+.rmae-pins { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity .6s ease; }
+.rmae-pins-on { opacity: 1; }
+.rmae-pin3 {
+  position: absolute; top: 0; left: 0; width: 26px; height: 26px; padding: 0;
+  display: grid; place-items: center; border-radius: 50%;
+  will-change: transform;
+}
+.rmae-pin3 span {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--amber);
+  box-shadow: 0 0 0 0 rgba(242,111,31,.6); transition: background .3s ease, transform .3s ease;
+}
+.rmae-pin3::before {
+  content: ''; position: absolute; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--amber); opacity: 0;
+  animation: rmae-pin-ping 2.6s ease-out infinite;
+}
+.rmae-pin3:nth-child(2)::before { animation-delay: .4s; }
+.rmae-pin3:nth-child(3)::before { animation-delay: .8s; }
+.rmae-pin3:nth-child(4)::before { animation-delay: 1.2s; }
+.rmae-pin3:nth-child(5)::before { animation-delay: 1.6s; }
+.rmae-pin3:nth-child(6)::before { animation-delay: 2s; }
+@keyframes rmae-pin-ping {
+  0%   { transform: scale(.35); opacity: .8; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+.rmae-pin3-on span { background: var(--volt); transform: scale(1.35); }
+.rmae-pin3-on::before { border-color: var(--volt); }
+
 .rmae-rig-readout {
   margin-top: 1.2rem; padding: .9rem 1.05rem; border-radius: 12px;
   background: rgba(6,7,10,.65); box-shadow: inset 0 0 0 1px var(--line);

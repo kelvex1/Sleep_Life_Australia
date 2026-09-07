@@ -14,7 +14,8 @@ pages. No shared components, no shared CSS, no changes to the existing routes.
 1. Open `/rockhampton`. Let the hero video and the headline animate in.
 2. Scroll slowly. The two wiring looms down the page margins are drawn by scroll
    position, with a current pulse chasing along them.
-3. Tap the six hotspots on the ute in "If it runs on volts, it's our problem".
+3. Drag the ute in "If it runs on volts, it's our problem" to spin it, and tap the six
+   hotspots. It is a real 3D model, not a video or a sprite sheet.
 4. Fill in the hero enquiry form with *his* name and number and hit send.
 5. Click **See it land in the dashboard**. His enquiry is sitting at the top of the
    list, flashing orange, tagged NEW and TODAY.
@@ -22,6 +23,27 @@ pages. No shared components, no shared CSS, no changes to the existing routes.
 
 That last loop is the pitch: the website is not a brochure, it is the front door to a
 job list.
+
+## The 3D rig
+
+`_lib/ute3d.ts` is a hand-built 3D model of a dual-cab 4x4, with no library and no
+external asset. The geometry is defined in metres from real dimensions (5.33m long,
+1.855m wide, 1.815m high, 3.085m wheelbase, 0.80m tyres), then lit, depth-sorted and
+projected onto a 2D canvas by hand.
+
+Two decisions worth knowing if you touch it:
+
+- **Surfaces, not wireframe.** A wireframe of a solid object shows every hidden edge
+  at once and reads as a pile of boxes. Faces are filled and drawn back to front
+  (painter's algorithm) with a single key light, so the silhouette is readable and the
+  panel lines glow over it.
+- **No CDN.** Loading a model viewer and a GLB from a CDN would break in any sandbox
+  that blocks third-party requests, and could not be tested here. Everything ships
+  with the page, so the artifact preview and the deployed site render identically.
+
+Hotspots are DOM buttons so they stay keyboard reachable; each frame the scene reports
+where its anchor landed on screen and the button is moved to match, fading out when it
+passes behind the vehicle.
 
 ## What is real and what is placeholder
 
