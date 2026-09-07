@@ -278,7 +278,7 @@
 .rmae-hero-copy { display: grid; gap: 1.6rem; }
 .rmae-h1 {
   font-family: var(--font-display); font-weight: 400;
-  font-size: clamp(2.1rem, 7.2vw, 6.2rem);
+  font-size: clamp(2rem, 6vw, 5.4rem);
   line-height: .9; letter-spacing: .005em; text-transform: uppercase;
 }
 .rmae-h1 .rmae-line { display: block; overflow: hidden; white-space: nowrap; }
