@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Rockhampton Mobile Auto Electrics">
+  <defs>
+    <path id="rmae-top" d="M 32,100 A 68,68 0 0 1 168,100" />
+    <path id="rmae-bottom" d="M 172,100 A 72,72 0 0 1 28,100" />
+    <radialGradient id="rmae-face" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#FF8A2B"/>
+      <stop offset="60%" stop-color="#F26F1F"/>
+      <stop offset="100%" stop-color="#D65A12"/>
+    </radialGradient>
+  </defs>
+
+  <circle cx="100" cy="100" r="99" fill="url(#rmae-face)"/>
+  <circle cx="100" cy="100" r="90" fill="none" stroke="#FFF4E6" stroke-width="2.5" opacity="0.95"/>
+
+  <g fill="#FFF4E6" font-family="Arial Black, Arial, Helvetica, sans-serif" font-weight="900">
+    <text font-size="17" letter-spacing="1.6" text-anchor="middle">
+      <textPath href="#rmae-top" startOffset="50%">ROCKHAMPTON</textPath>
+    </text>
+    <text font-size="15.5" letter-spacing="2.2" text-anchor="middle">
+      <textPath href="#rmae-bottom" startOffset="50%">AUTO ELECTRICS</textPath>
+    </text>
+  </g>
+
+  <text x="100" y="63" fill="#FFF4E6" font-family="Arial, Helvetica, sans-serif" font-weight="700"
+        font-size="10" letter-spacing="4.5" text-anchor="middle">MOBILE</text>
+
+  <!-- spark plug -->
+  <g transform="translate(100 96)" fill="#FFF4E6">
+    <rect x="-7" y="-24" width="14" height="9" rx="1.6"/>
+    <rect x="-9" y="-14" width="18" height="6" rx="1.2"/>
+    <rect x="-9" y="-6" width="18" height="6" rx="1.2"/>
+    <rect x="-6.5" y="2" width="13" height="10" rx="1.4"/>
+    <rect x="-2.5" y="12" width="5" height="8" rx="1"/>
+    <path d="M -2.5 20 L -2.5 24 L 4 24" stroke="#FFF4E6" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- lightning bolts -->
+  <path d="M 46 78 L 60 78 L 51 92 L 62 92 L 42 116 L 49 96 L 39 96 Z" fill="#FFF4E6"/>
+  <path d="M 154 78 L 140 78 L 149 92 L 138 92 L 158 116 L 151 96 L 161 96 Z" fill="#FFF4E6"/>
+
+  <text x="100" y="146" fill="#FFF4E6" font-family="Arial Black, Arial, Helvetica, sans-serif"
+        font-weight="900" font-size="30" letter-spacing="1.5" text-anchor="middle">RMAE</text>
+
+  <text x="100" y="161" fill="#FFF4E6" font-family="Arial, Helvetica, sans-serif" font-weight="700"
+        font-size="8.5" letter-spacing="2.2" text-anchor="middle" opacity="0.9">0427 667 996</text>
+</svg>

@@ -12,6 +12,16 @@ to = "/book.html"
 status = 200
 
 [[redirects]]
+from = "/rockhampton"
+to = "/rockhampton.html"
+status = 200
+
+[[redirects]]
+from = "/rockhampton/admin"
+to = "/rockhampton/admin.html"
+status = 200
+
+[[redirects]]
 from = "/*"
 to = "/index.html"
 status = 200
