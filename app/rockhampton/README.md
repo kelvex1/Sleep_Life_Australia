@@ -45,10 +45,19 @@ Three things worth knowing if you touch it:
   model until the section is within 300px of the viewport, so the landing page is not
   paying 2MB for something below the fold.
 
-The source model faces -z, so an outer group turns it around; downstream code, the
-hotspot anchors included, can then assume the nose points along +z. Hotspots are DOM
-buttons projected through the camera each frame, so they stay keyboard reachable and
-fade out when they pass behind the vehicle.
+On the centred model the nose sits at z=+2.7 and the tail at z=-2.7, so no turnaround
+is needed: the camera simply starts on the +z side. Hotspot anchors were measured off a
+side-on render at 153px per metre and sit on the centreline, so each stays on its own
+panel from every angle as the model turns. They are DOM buttons projected through the
+camera each frame, so they stay keyboard reachable and fade out when they pass behind
+the vehicle.
+
+**On a phone:** the canvas takes `touch-action: pan-y`, so a vertical swipe still
+scrolls the page and a horizontal one spins the rig; only a mouse pitches the camera.
+A flick carries momentum before settling back into the idle turn. Pixel ratio is capped
+lower and antialiasing is off on coarse pointers, the camera starts closer so the
+vehicle is not a postage stamp on a 390px screen, hotspots get 44px touch targets, and
+an IntersectionObserver stops rendering entirely once the section scrolls away.
 
 **Licensing:** the Hilux model is a third-party asset you supplied. Confirm its licence
 covers commercial use on a client site, and whether attribution is required, before this

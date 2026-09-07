@@ -11,20 +11,25 @@
 export type Vec3 = [number, number, number]
 export type Hotspot = { id: string; title: string; text: string; pos: Vec3 }
 
-/** Anchors in the model's own space, after it is centred and scaled below. */
+/**
+ * Anchors in the model's own space, after it is centred and scaled below.
+ * Measured off a side-on render at 153px per metre: the nose sits at z=+2.7,
+ * the tail at z=-2.7 and the roof at y=1.99. Each one is on the centreline so
+ * it stays on the right panel from every angle as the model turns.
+ */
 export const HOTSPOTS: Hotspot[] = [
-  { id: 'bonnet', title: 'Under the bonnet', pos: [0, 1.15, 1.75],
-    text: 'Alternator, starter, battery, earths. Tested under load, not just eyeballed.' },
-  { id: 'dash', title: 'Behind the dash', pos: [0, 1.34, 0.5],
-    text: 'Scan-tool diagnostics, modules, fuses and the wiring nobody wants to chase.' },
-  { id: 'cabin', title: 'Cabin and air con', pos: [0.98, 1.5, -0.3],
-    text: 'Licensed re-gas, leak testing, blower and compressor faults. Cold air, fast.' },
-  { id: 'roof', title: 'Roof and accessories', pos: [0, 1.98, -0.2],
-    text: 'Light bars, driving lights, UHF aerials and winches. Fused and loomed, not tapped into the nearest wire.' },
-  { id: 'tray', title: 'Tray and canopy', pos: [0, 1.2, -1.85],
-    text: 'Dual battery, DC-DC, solar, fridge and lighting. Fused, loomed and labelled.' },
-  { id: 'tow', title: 'Rear and towing', pos: [0, 0.6, -2.75],
-    text: 'Trailer plugs, brake controllers, reverse cameras and lighting done properly.' },
+  { id: 'charging', title: 'Alternators and charging', pos: [0, 1.4, 1.95],
+    text: 'Alternators, starters, batteries and the earths everyone forgets. Tested under load, not just eyeballed.' },
+  { id: 'diagnostics', title: 'Scan tool diagnostics', pos: [0, 1.45, 1.2],
+    text: 'Live data off the scan tool, modules, fuses, and harness repair for the wiring nobody wants to chase.' },
+  { id: 'aircon', title: 'Air conditioning', pos: [0, 1.55, 0.3],
+    text: 'Re-gas, leak testing, compressors and blower faults. Cold air before the next Rocky summer.' },
+  { id: 'accessories', title: 'Accessory installation', pos: [0, 1.98, 0.05],
+    text: 'Driving lights, light bars, UHF and reverse cameras. Fused and loomed, not tapped into the nearest wire.' },
+  { id: 'dual', title: 'Dual battery and solar', pos: [0, 1.25, -1.65],
+    text: 'Dual battery and solar charging systems, DC-DC, fridges and inverters. Labelled and tidy.' },
+  { id: 'brakes', title: 'Electric brake controls', pos: [0, 0.78, -2.6],
+    text: 'Electric brake controllers, trailer plugs and lighting, set up and tested with the van on the back.' },
 ]
 
 export type Projected = { x: number; y: number; depth: number; front: boolean; visible: boolean }
@@ -80,7 +85,14 @@ export async function createUteScene(
   if (src.decoder) await script(src.decoder)
   const THREE = window.THREE
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  const coarse = window.matchMedia('(pointer: coarse)').matches
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    // antialiasing is expensive fill on phones, and they have the DPR to spare
+    antialias: !coarse,
+    alpha: true,
+    powerPreference: 'high-performance',
+  })
   renderer.setClearColor(0x000000, 0)
   renderer.outputEncoding = THREE.sRGBEncoding
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -118,9 +130,9 @@ export async function createUteScene(
   })
   const model = gltf.scene
 
-  // Centre on the ground and scale to a real 5.4m. The source model faces -z,
-  // so an outer group turns it around: everything downstream, the hotspot
-  // anchors included, can then assume the nose points along +z.
+  // Centre on the ground and scale to a real 5.4m. Measured on the centred
+  // model, the nose sits at +z and the tail at -z, which is what the hotspot
+  // anchors above assume; the camera simply starts on the +z side.
   let boxfit = new THREE.Box3().setFromObject(model)
   const size = boxfit.getSize(new THREE.Vector3())
   const scale = TARGET_LENGTH / Math.max(size.x, size.y, size.z)
@@ -128,10 +140,7 @@ export async function createUteScene(
   boxfit = new THREE.Box3().setFromObject(model)
   const centre = boxfit.getCenter(new THREE.Vector3())
   model.position.set(-centre.x, -boxfit.min.y, -centre.z)
-  const facing = new THREE.Group()
-  facing.rotation.y = Math.PI
-  facing.add(model)
-  pivot.add(facing)
+  pivot.add(model)
 
   model.traverse((o: any) => {
     if (!o.isMesh) return
@@ -146,12 +155,14 @@ export async function createUteScene(
     }
   })
 
-  let yaw = 2.42
+  let yaw = 0.72
   let pitch = 0.3
   let dist = 11
   let dragging = false
   let lastX = 0
   let lastY = 0
+  let spin = 0
+  let onScreen = true
   let raf = 0
   let listener: ((pts: Projected[]) => void) | null = null
   let w = 1
@@ -161,18 +172,28 @@ export async function createUteScene(
     const r = canvas.getBoundingClientRect()
     w = Math.max(1, Math.round(r.width))
     h = Math.max(1, Math.round(r.height))
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, coarse ? 1.75 : 2))
     renderer.setSize(w, h, false)
     camera.aspect = w / h
-    // pull back on narrow cards so the whole vehicle stays in frame
-    dist = 11 * Math.max(1, 1.55 / camera.aspect)
+    // Pull back on narrow cards so the whole vehicle stays in frame. Phones
+    // start closer, otherwise a 5.4m ute on a 300px canvas is a postage stamp
+    // and the hotspots land on top of each other.
+    dist = (coarse ? 9.6 : 11) * Math.max(1, 1.55 / camera.aspect)
     camera.updateProjectionMatrix()
   }
 
   const anchor = new THREE.Vector3()
   function frame() {
     raf = 0
-    if (!dragging && !reduced) yaw += 0.0022
+    if (!dragging) {
+      // carry a flick, then settle back into the slow idle turn
+      if (Math.abs(spin) > 0.00025) {
+        yaw += spin
+        spin *= 0.94
+      } else if (!reduced) {
+        yaw += 0.0022
+      }
+    }
     camera.position.set(
       Math.sin(yaw) * Math.cos(pitch) * dist,
       Math.sin(pitch) * dist + 0.7,
@@ -198,21 +219,37 @@ export async function createUteScene(
     schedule()
   }
   function schedule() {
-    if (!raf) raf = requestAnimationFrame(frame)
+    if (!raf && onScreen) raf = requestAnimationFrame(frame)
   }
+
+  // Stop rendering entirely when the section is scrolled away: on a phone this
+  // is the difference between a warm battery and a flat one.
+  const vis = new IntersectionObserver((entries) => {
+    onScreen = entries.some((e) => e.isIntersecting)
+    if (onScreen) schedule()
+  }, { rootMargin: '120px' })
+  vis.observe(canvas)
 
   function onDown(e: PointerEvent) {
     dragging = true
+    spin = 0
     lastX = e.clientX
     lastY = e.clientY
     canvas.setPointerCapture(e.pointerId)
+    schedule()
   }
   function onMove(e: PointerEvent) {
     if (!dragging) return
-    yaw -= (e.clientX - lastX) * 0.008
-    pitch = Math.max(0.03, Math.min(0.72, pitch + (e.clientY - lastY) * 0.004))
+    const dx = e.clientX - lastX
+    yaw -= dx * 0.008
+    spin = -dx * 0.008
+    // touch keeps the page scrollable vertically, so only mice pitch the camera
+    if (e.pointerType !== 'touch') {
+      pitch = Math.max(0.03, Math.min(0.72, pitch + (e.clientY - lastY) * 0.004))
+    }
     lastX = e.clientX
     lastY = e.clientY
+    schedule()
   }
   function onUp(e: PointerEvent) {
     dragging = false
@@ -236,6 +273,7 @@ export async function createUteScene(
       canvas.removeEventListener('pointerup', onUp)
       canvas.removeEventListener('pointercancel', onUp)
       window.removeEventListener('resize', resize)
+      vis.disconnect()
       renderer.dispose()
     },
     onFrame(cb) { listener = cb },

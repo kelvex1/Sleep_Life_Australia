@@ -5,14 +5,14 @@ import { ArrowRight, Check, ShieldCheck, Loader2 } from 'lucide-react'
 import { addEnquiry, ref as makeRef } from '../_lib/store'
 
 const SERVICES = [
-  'Auto electrical diagnostics',
-  'Air conditioning (repair / re-gas)',
-  'Dual battery system',
-  '12V camper or canopy fitout',
-  'Starting & charging (alternator, starter)',
-  'Rewiring & fault finding',
-  'Trailer wiring, lights & cameras',
-  'Fleet / heavy vehicle service',
+  'Air conditioning',
+  'Scan tool diagnostics',
+  'Harness repair',
+  'Accessory installation',
+  'Dual battery & solar charging',
+  'Alternators, starting & charging',
+  'Electric brake controls',
+  'Servicing & mechanical repairs',
   'Something else',
 ]
 

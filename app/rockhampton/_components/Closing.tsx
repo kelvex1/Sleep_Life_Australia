@@ -59,19 +59,20 @@ export function Closing() {
                 </span>
               </a>
               <p style={{ maxWidth: '30ch' }}>
-                A locally owned and operated auto electrical business. Your one stop shop for all
-                your electrical and air conditioning needs.
+                A locally owned and operated auto electrical business. Servicing Central Queensland
+                commercial and light vehicles.
               </p>
             </div>
 
             <div>
               <h4>Services</h4>
               <ul>
-                <li><a href="#services">Diagnostics</a></li>
                 <li><a href="#services">Air conditioning</a></li>
-                <li><a href="#services">Dual battery &amp; 12V</a></li>
-                <li><a href="#services">Rewiring</a></li>
-                <li><a href="#services">Fleet servicing</a></li>
+                <li><a href="#services">Scan tool diagnostics</a></li>
+                <li><a href="#services">Harness repair</a></li>
+                <li><a href="#services">Dual battery &amp; solar</a></li>
+                <li><a href="#services">Electric brake controls</a></li>
+                <li><a href="#services">Servicing &amp; mechanical</a></li>
               </ul>
             </div>
 

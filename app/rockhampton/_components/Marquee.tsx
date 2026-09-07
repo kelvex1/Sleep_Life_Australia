@@ -1,7 +1,7 @@
 const ITEMS = [
-  'Auto electrical', 'Air conditioning', 'Dual battery systems', '12V fitouts',
-  'Diagnostics', 'Rewiring', 'Starting & charging', 'Trailer wiring',
-  'Light bars & winches', 'Fleet servicing',
+  'Air conditioning', 'Scan tool diagnostics', 'Harness repair', 'Accessory installation',
+  'Dual battery & solar charging', 'Alternators', 'Electric brake controls',
+  'Servicing & mechanical repairs',
 ]
 
 export function Marquee() {

@@ -2,45 +2,57 @@
 
 import { useCallback } from 'react'
 import {
-  Gauge, Snowflake, BatteryCharging, Truck, CircuitBoard, Caravan,
+  Gauge, Snowflake, BatteryCharging, Truck, CircuitBoard, Caravan, Plug, Wrench,
 } from 'lucide-react'
 
 const SERVICES = [
   {
     icon: Gauge,
-    title: 'Diagnostics & fault finding',
-    body: 'Scan tools, wiring diagrams and a meter, not guesswork. We find the actual fault before anyone spends money on parts.',
-    points: ['Intermittent no-starts', 'Warning lights & modules', 'Parasitic battery drain'],
+    title: 'Scan tool diagnostics',
+    body: 'Live data off the scan tool instead of guesswork, so the actual fault is found before anyone spends money on parts.',
+    points: ['Intermittent no-starts', 'Warning lights and modules', 'Parasitic battery drain'],
   },
   {
     icon: Snowflake,
-    title: 'Auto air conditioning',
-    body: 'Blowing warm in a Rocky summer is not a small problem. Leak testing, re-gas, compressors and condensers, on site.',
-    points: ['Licensed re-gas', 'Leak detection', 'Compressor & condenser'],
+    title: 'Air conditioning',
+    body: 'Blowing warm through a Rocky summer is not a small problem. Leak testing, re-gas, compressors and condensers, on site.',
+    points: ['Licensed re-gas', 'Leak detection', 'Compressor and blower faults'],
   },
   {
     icon: BatteryCharging,
-    title: 'Starting & charging',
-    body: 'Batteries, alternators, starters and the earths everyone forgets. Tested properly so it does not come back next week.',
-    points: ['Alternator & starter', 'Battery testing', 'Earth & cable repairs'],
+    title: 'Alternators',
+    body: 'Alternators, starters, batteries and the earths everyone forgets. Tested under load so it does not come back next week.',
+    points: ['Alternators and starters', 'Battery and charge testing', 'Cable and earth repairs'],
   },
   {
     icon: Caravan,
-    title: 'Dual battery & 12V fitouts',
-    body: 'Canopies, campers, caravans and tourers wired to do a full trip: DC-DC charging, solar, fridges, lighting, inverters.',
-    points: ['DC-DC & solar', 'Anderson plugs', 'Fridge, lights, inverter'],
+    title: 'Dual battery and solar',
+    body: 'Dual battery and solar charging systems for canopies, campers and caravans, wired to do a full trip.',
+    points: ['DC-DC and solar', 'Anderson plugs', 'Fridge, lights, inverter'],
   },
   {
     icon: CircuitBoard,
-    title: 'Rewiring & accessories',
-    body: 'Light bars, winches, UHF, cameras and trailer plugs installed so they are fused, loomed and tidy behind the dash.',
-    points: ['Light bars & winches', 'Reverse cameras', 'Trailer wiring'],
+    title: 'Harness repair',
+    body: 'Chafed looms, corroded connectors and previous repairs put right, then loomed and labelled so the next person can follow it.',
+    points: ['Chafed and burnt looms', 'Connector and pin repairs', 'Rewiring and fault finding'],
+  },
+  {
+    icon: Plug,
+    title: 'Accessory installation',
+    body: 'Driving lights, light bars, UHF, reverse cameras and trailer plugs, installed fused and tidy rather than tapped into the nearest wire.',
+    points: ['Driving lights and light bars', 'UHF and reverse cameras', 'Trailer wiring'],
   },
   {
     icon: Truck,
-    title: 'Fleet & heavy vehicle',
-    body: 'Trucks, earthmoving and ag gear kept moving with scheduled electrical servicing at your yard or on the job.',
-    points: ['On-site servicing', 'Scheduled fleet checks', 'Breakdown support'],
+    title: 'Electric brake controls',
+    body: 'Electric brake controllers supplied, fitted and set up with the van or trailer on the back, then tested properly.',
+    points: ['Controller supply and fit', 'Trailer plugs and lighting', 'Set up and tested loaded'],
+  },
+  {
+    icon: Wrench,
+    title: 'Servicing and mechanical',
+    body: 'Not just the electrical side. Servicing and mechanical repairs for commercial and light vehicles across Central Queensland.',
+    points: ['Logbook and general servicing', 'Mechanical repairs', 'Commercial and light vehicles'],
   },
 ]
 
@@ -71,8 +83,9 @@ export function Services() {
             <em>without the tow truck</em>
           </h2>
           <p className="rmae-lede">
-            One van, one sparky, the full kit. Most jobs are finished where the vehicle is
-            parked, which means no towing bill and no day off work.
+            Everything on the side of the truck, done at your place. Servicing Central
+            Queensland commercial and light vehicles, so most jobs are finished where the
+            vehicle is parked: no towing bill and no day off work.
           </p>
         </header>
 
