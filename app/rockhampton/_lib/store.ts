@@ -74,7 +74,7 @@ export function seedEnquiries(): Enquiry[] {
     {
       id: 'ss-1005', name: 'Priya Raman', phone: '0421 550 903', email: 'priya.r@example.com',
       vehicle: '2021 Isuzu D-Max', service: '12V camper fitout', urgency: 'planning',
-      notes: 'Full canopy fitout — fridge, lighting, inverter, solar.',
+      notes: 'Full canopy fitout: fridge, lighting, inverter, solar.',
       createdAt: hrs(50), status: 'done', value: 3180, source: 'Website form',
     },
     {
@@ -107,7 +107,7 @@ export function saveEnquiries(rows: Enquiry[]) {
   try {
     window.localStorage.setItem(KEY, JSON.stringify(rows))
   } catch {
-    /* private browsing — the demo still works, it just will not persist */
+    /* private browsing: the demo still works, it just will not persist */
   }
 }
 

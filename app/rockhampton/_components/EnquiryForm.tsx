@@ -41,7 +41,7 @@ export function EnquiryForm() {
     const next: Errors = {}
     if (form.name.trim().length < 2) next.name = 'Tell us who to ask for.'
     if (form.phone.replace(/\D/g, '').length < 8) next.phone = 'We need a number to call you back on.'
-    if (!form.service) next.service = 'Pick the closest one — we will sort the detail on the phone.'
+    if (!form.service) next.service = 'Pick the closest one. We will sort the detail on the phone.'
     setErrors(next)
     if (Object.keys(next).length) return
 
@@ -71,7 +71,7 @@ export function EnquiryForm() {
           </div>
           <h4>Booked in the queue</h4>
           <p>
-            Thanks {form.name.split(' ')[0]} — your job is sitting in the workshop dashboard now.
+            Thanks {form.name.split(' ')[0]}, your job is sitting in the workshop dashboard now.
             Expect a call back on {form.phone}.
           </p>
           <code>{reference}</code>
@@ -141,7 +141,7 @@ export function EnquiryForm() {
         <div className="rmae-field">
           <label htmlFor="rmae-urgency">How soon?</label>
           <select id="rmae-urgency" value={form.urgency} onChange={set('urgency')}>
-            <option value="today">Today — it&apos;s off the road</option>
+            <option value="today">Today, it&apos;s off the road</option>
             <option value="this-week">This week</option>
             <option value="planning">Just planning / after a price</option>
           </select>

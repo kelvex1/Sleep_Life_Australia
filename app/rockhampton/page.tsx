@@ -8,6 +8,7 @@ import { Services } from './_components/Services'
 import { Cluster } from './_components/Cluster'
 import { Rig } from './_components/Rig'
 import { Process } from './_components/Process'
+import { Gallery } from './_components/Gallery'
 import { Reviews } from './_components/Reviews'
 import { Area } from './_components/Area'
 import { Closing } from './_components/Closing'
@@ -33,6 +34,7 @@ export default function RockhamptonPage() {
           </section>
           <Rig />
           <Process />
+          <Gallery />
           <Reviews />
           <Area />
           <Closing />

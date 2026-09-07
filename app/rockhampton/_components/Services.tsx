@@ -9,7 +9,7 @@ const SERVICES = [
   {
     icon: Gauge,
     title: 'Diagnostics & fault finding',
-    body: 'Scan tools, wiring diagrams and a meter — not guesswork. We find the actual fault before anyone spends money on parts.',
+    body: 'Scan tools, wiring diagrams and a meter, not guesswork. We find the actual fault before anyone spends money on parts.',
     points: ['Intermittent no-starts', 'Warning lights & modules', 'Parasitic battery drain'],
   },
   {
@@ -27,7 +27,7 @@ const SERVICES = [
   {
     icon: Caravan,
     title: 'Dual battery & 12V fitouts',
-    body: 'Canopies, campers, caravans and tourers wired to do a full trip — DC-DC charging, solar, fridges, lighting, inverters.',
+    body: 'Canopies, campers, caravans and tourers wired to do a full trip: DC-DC charging, solar, fridges, lighting, inverters.',
     points: ['DC-DC & solar', 'Anderson plugs', 'Fridge, lights, inverter'],
   },
   {
@@ -72,7 +72,7 @@ export function Services() {
           </h2>
           <p className="rmae-lede">
             One van, one sparky, the full kit. Most jobs are finished where the vehicle is
-            parked — which means no towing bill and no day off work.
+            parked, which means no towing bill and no day off work.
           </p>
         </header>
 

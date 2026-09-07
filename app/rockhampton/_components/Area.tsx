@@ -48,7 +48,7 @@ export function Area() {
             </h2>
             <p className="rmae-lede">
               Based at Unit 2b/197 Kent Street and mobile across the region every day. Outside the
-              list? Ring us — if we can get there, we will.
+              list? Ring us. If we can get there, we will.
             </p>
           </header>
           <ul className="rmae-towns rmae-reveal">

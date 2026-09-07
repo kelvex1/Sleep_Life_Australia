@@ -2,7 +2,7 @@
 
 const STEPS = [
   { n: 'Step 01', t: 'You call or send the form', d: 'Thirty seconds. Vehicle, suburb, what it is doing. That is all we need to start.' },
-  { n: 'Step 02', t: 'We book a real time slot', d: 'A window that suits you — home, work or the yard. You get a heads-up call before we roll.' },
+  { n: 'Step 02', t: 'We book a real time slot', d: 'A window that suits you: home, work or the yard. You get a heads-up call before we roll.' },
   { n: 'Step 03', t: 'Diagnosis, then a price', d: 'We find the actual fault on site and quote it before we touch anything.' },
   { n: 'Step 04', t: 'Fixed and tested there', d: 'Repaired, load-tested and tidied up. Invoice and warranty in your inbox before we leave.' },
 ]

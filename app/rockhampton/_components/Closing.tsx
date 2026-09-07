@@ -1,11 +1,29 @@
+'use client'
+
+import { useState } from 'react'
 import { Phone, ArrowRight, Mail, MapPin, Clock3 } from 'lucide-react'
+import { SHOTS } from '../_lib/media'
 
 export function Closing() {
+  const [bg, setBg] = useState(false)
+
   return (
     <>
       <section className="rmae-section" style={{ paddingTop: 0 }}>
         <div className="rmae-shell">
           <div className="rmae-cta rmae-reveal">
+            <div className="rmae-cta-photo" aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={SHOTS.scan.src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className={bg ? 'rmae-plate-on' : undefined}
+                onLoad={() => setBg(true)}
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
+            </div>
             <span className="rmae-eyebrow">Off the road?</span>
             <h2 className="rmae-h2">
               Tell us the fault.
@@ -73,13 +91,13 @@ export function Closing() {
               <p><Phone size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} /><a href="tel:+61427667996">0427 667 996</a></p>
               <p><Mail size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} /><a href="mailto:admin@rmautoelec.com.au">admin@rmautoelec.com.au</a></p>
               <p><MapPin size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />Unit 2b/197 Kent St, Rockhampton City QLD 4700</p>
-              <p><Clock3 size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />Mon–Fri until 5:00pm · Sat mornings by arrangement</p>
+              <p><Clock3 size={13} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />Mon to Fri until 5:00pm · Sat mornings by arrangement</p>
             </div>
           </div>
 
           <div className="rmae-foot-bar">
             <span>© {new Date().getFullYear()} Rockhampton Mobile Auto Electrics.</span>
-            <span>Concept site — built for the Wednesday sit-down.</span>
+            <span>Concept site, built for the Wednesday sit-down.</span>
           </div>
         </div>
       </footer>

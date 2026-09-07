@@ -1,8 +1,8 @@
-# Rockhampton Mobile Auto Electrics — concept site
+# Rockhampton Mobile Auto Electrics concept site
 
 A self-contained demo built to win the Wednesday sit-down. It lives entirely under
 `app/rockhampton/` and `public/rmae/` and shares nothing with the Sleep Life Australia
-pages — no shared components, no shared CSS, no changes to the existing routes.
+pages. No shared components, no shared CSS, no changes to the existing routes.
 
 | | |
 |---|---|
@@ -12,9 +12,9 @@ pages — no shared components, no shared CSS, no changes to the existing routes
 ## The demo to run in the meeting
 
 1. Open `/rockhampton`. Let the hero video and the headline animate in.
-2. Scroll slowly — the two wiring looms down the page margins are drawn by scroll
+2. Scroll slowly. The two wiring looms down the page margins are drawn by scroll
    position, with a current pulse chasing along them.
-3. Tap the hotspots on the ute in "If it runs on volts, it's our problem".
+3. Tap the six hotspots on the ute in "If it runs on volts, it's our problem".
 4. Fill in the hero enquiry form with *his* name and number and hit send.
 5. Click **See it land in the dashboard**. His enquiry is sitting at the top of the
    list, flashing orange, tagged NEW and TODAY.
@@ -32,13 +32,13 @@ Real, taken from the Google listing and Facebook page:
 - Address Unit 2b/197 Kent St, Rockhampton City QLD 4700
 - The "locally owned and operated… one stop shop" line from the Facebook bio
 
-Placeholder — confirm with him before this goes anywhere public:
+Placeholder, so confirm with him before this goes anywhere public:
 
 - **Logo** (`public/rmae/logo.svg`) is a hand-built recreation of the RMAE badge.
   Facebook was unreachable from the build environment, so the real artwork could not
   be downloaded. Drop his PNG/SVG in and update the two `<img src>` references.
 - **Trading hours.** Google only exposes "closes 5pm", and a review mentions a
-  Saturday morning. The footer says "Mon–Fri until 5:00pm · Sat mornings by
+  Saturday morning. The footer says "Mon to Fri until 5:00pm · Sat mornings by
   arrangement". Get the real hours.
 - **Service area towns, response times and the "92% done on site" gauge** are
   plausible, not measured.
@@ -51,17 +51,41 @@ silent). The build environment's egress policy blocks the Higgsfield CDN, so the
 are not committed. `_lib/media.ts` lists all three URLs and the `<video>` element has
 two sources:
 
-1. `/rmae/hero.mp4` — local, wins if present
-2. the CDN URL for the selected take — used while no local file exists
+1. `/rmae/hero.mp4`, local, wins if present
+2. the CDN URL for the selected take, used while no local file exists
 
 To pin the footage: download the take you want, save it as `public/rmae/hero.mp4`, and
 it takes over with no code change. To preview a different take instead, change the
 `HERO_REMOTE` export in `_lib/media.ts`.
 
+## Photography
+
+Every image slot is a designed plate before it is a photograph. `_components/Plate.tsx`
+renders the brief for the shot, and the photo fades in over it only once it has
+decoded, so a slow, blocked or missing file leaves a labelled shot card rather than a
+broken box. `_lib/media.ts` holds the shot list: id, alt text, caption and the brief.
+
+The five in the "On the job" gallery, plus one behind the closing call to action:
+
+| Slot | What to shoot |
+|---|---|
+| `van` | The RMAE ute on a job, canopy open, work light on. Late afternoon. |
+| `loom` | Hands on the tools. Crimper, loom, heat shrink, close in. |
+| `battery` | A finished dual battery job. Labelled fuse block, tidy cabling. |
+| `aircon` | Gauge set on the ports, bonnet up. Shoot on a bright day. |
+| `bench` | The workshop, tidy. This is the one the reviews keep mentioning. |
+| `scan` | Scan tool on the wheel, screen lit, plugged into the OBD port. |
+
+The `src` values currently point at generated placeholders on the Higgsfield CDN,
+which this environment could not download into the repo. They are stand-ins for
+composition only and **must not be presented as his work**. Replace each with a real
+photograph at `public/rmae/shots/<id>.jpg` and update `src` in `_lib/media.ts`. His
+Facebook page and Google listing already have usable shots of the van and workshop.
+
 ## Enquiry form
 
 The site is a static export (`output: 'export'`), so there is no server to post to.
-`_lib/store.ts` writes enquiries to `localStorage` and the dashboard reads them back —
+`_lib/store.ts` writes enquiries to `localStorage` and the dashboard reads them back,
 which is what makes the live demo work. Wiring it to a real inbox is a one-file change:
 replace `addEnquiry` with a POST to a form endpoint (Netlify Forms, a Supabase table,
 or an email function) and keep the same shape.
@@ -69,7 +93,7 @@ or an email function) and keep the same shape.
 ## Notes
 
 - Fonts (Anton, Space Grotesk, JetBrains Mono) are self-hosted in
-  `public/rmae/fonts/` — latin subsets, ~66 KB total, SIL Open Font License. No
+  `public/rmae/fonts/`: latin subsets, ~66 KB total, SIL Open Font License. No
   third-party request on load.
 - No Tailwind. This repo has no `tailwind.config.js` or `postcss.config.js`, so
   Tailwind classes elsewhere in the project are not compiled. Every style here is

@@ -11,7 +11,7 @@ const QUOTES = [
     tint: '#F26F1F',
   },
   {
-    text: 'Spotless workshop — a sign of well organised and quality service.',
+    text: 'Spotless workshop - a sign of well organised and quality service.',
     who: 'D.',
     tint: '#3DDC97',
   },

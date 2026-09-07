@@ -242,7 +242,7 @@ export default function AdminPage() {
                     <Sparkles size={14} />
                     <span>
                       <b>Try it:</b> send an enquiry from the website form and it appears in this
-                      dashboard straight away — no refresh, no spreadsheet.
+                      dashboard straight away. No refresh, no spreadsheet.
                     </span>
                   </div>
                 </div>

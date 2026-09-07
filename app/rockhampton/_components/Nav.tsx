@@ -6,6 +6,7 @@ import { Phone, Menu, X } from 'lucide-react'
 const LINKS = [
   { href: '#services', label: 'Services' },
   { href: '#work', label: 'What we fix' },
+  { href: '#gallery', label: 'Our work' },
   { href: '#process', label: 'How it works' },
   { href: '#reviews', label: 'Reviews' },
   { href: '#area', label: 'Service area' },
@@ -25,7 +26,7 @@ export function Nav() {
   return (
     <header className={`rmae-nav${stuck ? ' rmae-nav-stuck' : ''}`}>
       <div className="rmae-shell rmae-nav-in">
-        <a className="rmae-brand" href="#top" aria-label="Rockhampton Mobile Auto Electrics — home">
+        <a className="rmae-brand" href="#top" aria-label="Rockhampton Mobile Auto Electrics, home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/rmae/logo.svg" alt="" width={46} height={46} />
           <span className="rmae-brand-txt">

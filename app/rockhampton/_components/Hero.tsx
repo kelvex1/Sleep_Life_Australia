@@ -69,7 +69,7 @@ export function Hero() {
 
           <p className="rmae-hero-sub">
             Fully equipped mobile auto electrical and air conditioning service. Your driveway,
-            your worksite, your yard — we turn up with the workshop on the back and fix it there.
+            your worksite, your yard. We turn up with the workshop on the back and fix it there.
           </p>
 
           <div className="rmae-hero-actions">
@@ -93,7 +93,7 @@ export function Hero() {
             </div>
             <div className="rmae-trust-item">
               <b>100%</b>
-              <span>mobile — we come to you</span>
+              <span>mobile, we come to you</span>
             </div>
             <div className="rmae-trust-item">
               <b>Sat</b>
