@@ -890,3 +890,8 @@ html:has(.rmae-root), body:has(.rmae-root) { background: #06070A; }
 .rmae-find-list b { display: block; font-size: .95rem; margin-bottom: .1rem; }
 .rmae-find-list p { font-size: .85rem; color: var(--text-3); }
 .rmae-find-list a:hover { color: var(--amber); }
+.rmae-stage-loading {
+  position: absolute; inset: 0; z-index: 1; display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: .68rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--text-3); pointer-events: none;
+}

@@ -26,66 +26,33 @@ job list.
 
 ## The 3D rig
 
-`_lib/ute3d.ts` is a hand-built 3D model of a dual-cab 4x4, with no library and no
-external asset. The geometry is defined in metres from real dimensions (5.33m long,
-1.855m wide, 1.815m high, 3.085m wheelbase, 0.80m tyres), then lit, depth-sorted and
-projected onto a 2D canvas by hand.
+The section runs the supplied Toyota Hilux 4WD glTF in WebGL. `_lib/uteViewer.ts`
+sets up the scene, lights and camera; `_components/Rig.tsx` mounts it and keeps the
+hotspots in step.
 
-Three decisions worth knowing if you touch it:
+Three things worth knowing if you touch it:
 
-- **An extruded side profile, not a stack of boxes.** The body comes from one closed
-  2D profile swept across the width, so the silhouette carries the wheel arches, the
-  raked windscreen and the bonnet line exactly as they appear on the real side view.
-  The profile is traversed with the body on its left, so each wall's outward normal is
-  its edge direction turned a quarter turn clockwise. Boxes are only used for the
-  bolt-on parts: bull bar, light bar, mirrors, steps, snorkel, tow bar, tray rails.
+- **three.js is vendored, not loaded from a CDN.** `public/rmae/vendor/` holds
+  `three.min.js`, `GLTFLoader.js` and `meshopt_decoder.js`. The preview sandbox blocks
+  third-party scripts, and shipping them with the site means one code path that can
+  actually be tested rather than two that cannot.
+- **The model is meshopt-compressed.** The source is 10.5MB: 228k triangles across 48
+  separate shells, plus a 120k-segment wireframe overlay carried as LINES primitives.
+  Quadric simplification barely moves it, because the simplifier will not collapse
+  across shell boundaries. Dropping the overlay and compressing takes it to 1.3MB with
+  the detail intact. `scripts/slim-ute.mjs` is the pipeline.
+- **Everything is lazy.** An IntersectionObserver holds off loading the library and the
+  model until the section is within 300px of the viewport, so the landing page is not
+  paying 2MB for something below the fold.
 
-- **Surfaces, not wireframe.** A wireframe of a solid object shows every hidden edge
-  at once and reads as a pile of boxes. Faces are filled and drawn back to front
-  (painter's algorithm) with a single key light, so the silhouette is readable and the
-  panel lines glow over it.
-- **No CDN.** Loading a model viewer and a GLB from a CDN would break in any sandbox
-  that blocks third-party requests, and could not be tested here. Everything ships
-  with the page, so the artifact preview and the deployed site render identically.
+The source model faces -z, so an outer group turns it around; downstream code, the
+hotspot anchors included, can then assume the nose points along +z. Hotspots are DOM
+buttons projected through the camera each frame, so they stay keyboard reachable and
+fade out when they pass behind the vehicle.
 
-Hotspots are DOM buttons so they stay keyboard reachable; each frame the scene reports
-where its anchor landed on screen and the button is moved to match, fading out when it
-passes behind the vehicle.
-
-## What is real and what is placeholder
-
-Real, taken from the Google listing and Facebook page:
-
-- 4.9 rating from 39 Google reviews, and the three review quotes
-- Phone `0427 667 996`, email `admin@rmautoelec.com.au`
-- Address Unit 2b/197 Kent St, Rockhampton City QLD 4700
-- The "locally owned and operated… one stop shop" line from the Facebook bio
-
-Placeholder, so confirm with him before this goes anywhere public:
-
-- **Logo** (`public/rmae/logo.svg`) is a hand-built recreation of the RMAE badge.
-  Facebook was unreachable from the build environment, so the real artwork could not
-  be downloaded. Drop his PNG/SVG in and update the two `<img src>` references.
-- **Trading hours.** Google only exposes "closes 5pm", and a review mentions a
-  Saturday morning. The footer says "Mon to Fri until 5:00pm · Sat mornings by
-  arrangement". Get the real hours.
-- **Service area towns, response times and the "92% done on site" gauge** are
-  plausible, not measured.
-- Everything in the dashboard except a freshly submitted enquiry is seeded sample data.
-
-## Hero video
-
-Three cinematic takes were generated with Higgsfield (Seedance 2.5, 1080p, 8s,
-silent). The build environment's egress policy blocks the Higgsfield CDN, so the MP4s
-are not committed. `_lib/media.ts` lists all three URLs and the `<video>` element has
-two sources:
-
-1. `/rmae/hero.mp4`, local, wins if present
-2. the CDN URL for the selected take, used while no local file exists
-
-To pin the footage: download the take you want, save it as `public/rmae/hero.mp4`, and
-it takes over with no code change. To preview a different take instead, change the
-`HERO_REMOTE` export in `_lib/media.ts`.
+**Licensing:** the Hilux model is a third-party asset you supplied. Confirm its licence
+covers commercial use on a client site, and whether attribution is required, before this
+goes live. A model of a trademarked vehicle can carry terms of its own.
 
 ## The map
 

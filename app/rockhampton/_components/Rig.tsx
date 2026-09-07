@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Wrench, Clock3, Receipt, RotateCcw, Move3d } from 'lucide-react'
-import { HOTSPOTS, createUteScene, type Projected } from '../_lib/ute3d'
+import { HOTSPOTS, createUteScene, type Projected } from '../_lib/uteViewer'
 
 const PROMISES = [
   { icon: Clock3, title: 'We turn up when we say', body: 'You get a time window and a call when the van is on its way. No all-day waiting.' },
@@ -15,29 +15,59 @@ export function Rig() {
   const pins = useRef<(HTMLButtonElement | null)[]>([])
   const [active, setActive] = useState(0)
   const [ready, setReady] = useState(false)
+  const [failed, setFailed] = useState(false)
   const hot = HOTSPOTS[active]
 
   useEffect(() => {
     const el = canvas.current
     if (!el) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const scene = createUteScene(el, reduced)
+    let scene: { destroy: () => void } | null = null
+    let cancelled = false
 
-    // The pins are DOM buttons so they stay keyboard reachable; the scene just
-    // tells us where each anchor landed on screen this frame.
-    scene.onFrame((pts: Projected[]) => {
-      pts.forEach((p, i) => {
-        const pin = pins.current[i]
-        if (!pin) return
-        const scale = Math.max(0.62, Math.min(1.1, 11 / p.depth))
-        pin.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${scale.toFixed(3)})`
-        pin.style.opacity = p.visible ? (p.front ? '1' : '0.34') : '0'
-        pin.style.pointerEvents = p.visible ? 'auto' : 'none'
-        pin.style.zIndex = p.front ? '3' : '1'
-      })
-    })
-    setReady(true)
-    return () => scene.destroy()
+    // three.js and the model only download once the section is on screen.
+    const io = new IntersectionObserver((entries) => {
+      if (!entries.some((e) => e.isIntersecting)) return
+      io.disconnect()
+      createUteScene(
+        el,
+        {
+          three: '/rmae/vendor/three.min.js',
+          loader: '/rmae/vendor/GLTFLoader.js',
+          decoder: '/rmae/vendor/meshopt_decoder.js',
+          model: '/rmae/ute.glb',
+        },
+        reduced,
+      )
+        .then((s) => {
+          if (cancelled) { s.destroy(); return }
+          scene = s
+          s.onFrame((pts: Projected[]) => {
+            pts.forEach((p, i) => {
+              const pin = pins.current[i]
+              if (!pin) return
+              const scale = Math.max(0.62, Math.min(1.1, 13 / p.depth))
+              pin.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${scale.toFixed(3)})`
+              pin.style.opacity = p.visible ? (p.front ? '1' : '0.34') : '0'
+              pin.style.pointerEvents = p.visible ? 'auto' : 'none'
+              pin.style.zIndex = p.front ? '3' : '1'
+            })
+          })
+          setReady(true)
+        })
+        .catch((err) => {
+          // Leave the panel in its resting state rather than a dead canvas.
+          console.error('rig viewer failed to start', err)
+          setFailed(true)
+        })
+    }, { rootMargin: '300px' })
+    io.observe(el)
+
+    return () => {
+      cancelled = true
+      io.disconnect()
+      scene?.destroy()
+    }
   }, [])
 
   return (
@@ -63,6 +93,8 @@ export function Rig() {
               ))}
             </div>
 
+            {!ready && !failed && <div className="rmae-stage-loading">Loading model…</div>}
+            {failed && <div className="rmae-stage-loading">3D model unavailable</div>}
             <div className="rmae-stage-hint">
               <Move3d size={12} strokeWidth={2.2} aria-hidden />
               Drag to spin
