@@ -28,12 +28,14 @@ export const HERO_REMOTE = HERO_TAKES.workshop
  * Photography slots.
  *
  * `note` is the brief: what to shoot to replace the placeholder. It is what
- * the plate displays until a photograph loads, so an empty slot reads as a
- * shot list rather than a broken image.
+ * the plate displays until an image loads, so an empty slot reads as a shot
+ * list rather than a broken image.
  *
- * `src` currently points at generated placeholders on the Higgsfield CDN,
- * which could not be downloaded into the repo from this environment. Replace
- * each one with the real photograph at `public/rmae/shots/<id>.jpg`.
+ * The images currently in place are renders of the supplied Hilux glTF, made
+ * with scripts/shoot-ute.mjs. They are stand-ins, and the copy around them
+ * says so: they show the kind of vehicle, not his actual van or his actual
+ * jobs. Replace each with a real photograph at public/rmae/shots/<id>.webp
+ * and the caption and note with what it shows.
  */
 export type Shot = {
   id: string
@@ -43,51 +45,42 @@ export type Shot = {
   note: string
 }
 
-const CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DxrXI9aTgEtNSyik8TwFI9uQcd/'
-
 export const SHOTS: Record<string, Shot> = {
   van: {
     id: 'van',
-    src: CDN + 'hf_20260907_031205_cb4bdf51-46a2-4fe4-bcae-0b97b1c275bb.png',
-    alt: 'Mobile auto electrical service ute parked on a worksite with the canopy open',
-    caption: 'The van on site',
+    src: '/rmae/shots/van.webp',
+    alt: 'Dual-cab four wheel drive service ute with a bull bar and driving lights',
+    caption: 'The rig, ready to roll',
     note: 'The RMAE ute on a job, canopy open, work light on. Late afternoon.',
   },
-  loom: {
-    id: 'loom',
-    src: CDN + 'hf_20260907_031205_a8afd499-aaa7-4923-b9ab-efa055515a65.png',
-    alt: 'Close-up of an auto electrician crimping a terminal onto a vehicle wiring loom',
-    caption: 'Crimping a loom',
+  profile: {
+    id: 'profile',
+    src: '/rmae/shots/profile.webp',
+    alt: 'Side profile of the service ute, showing the tray, snorkel and side steps',
+    caption: 'The workshop on the back',
+    note: 'The van side-on with signage showing. Good for the top of the page.',
+  },
+  front: {
+    id: 'front',
+    src: '/rmae/shots/front.webp',
+    alt: 'Front of the service ute, bull bar and spotlights',
+    caption: 'Front bar and lights',
     note: 'Hands on the tools. Crimper, loom, heat shrink, close in.',
   },
-  battery: {
-    id: 'battery',
-    src: CDN + 'hf_20260907_031206_20539bc7-37f6-498a-bd16-956a717a0c40.png',
-    alt: 'Completed dual battery and 12 volt installation inside a ute canopy',
-    caption: 'Dual battery fitout',
+  tray: {
+    id: 'tray',
+    src: '/rmae/shots/tray.webp',
+    alt: 'Rear three quarter view of the service ute showing the open tray',
+    caption: 'Tray and canopy space',
     note: 'A finished dual battery job. Labelled fuse block, tidy cabling.',
   },
-  aircon: {
-    id: 'aircon',
-    src: CDN + 'hf_20260907_031205_c09ae5e7-0e5a-422d-bd5a-869f1ede83b7.png',
-    alt: 'Air conditioning manifold gauge set connected to a car engine bay',
-    caption: 'Air con service',
-    note: 'Gauge set on the ports, bonnet up. Shoot on a bright day.',
-  },
-  bench: {
-    id: 'bench',
-    src: CDN + 'hf_20260907_031205_d383f4e0-6b16-453f-97ba-cde64bb0032b.png',
-    alt: 'Clean, organised auto electrical workshop bench with tools on a shadow board',
-    caption: 'The Kent St workshop',
+  wheel: {
+    id: 'wheel',
+    src: '/rmae/shots/wheel.webp',
+    alt: 'Close view of the front wheel and guard of the service ute',
+    caption: 'Built for CQ tracks',
     note: 'The workshop, tidy. This is the one the reviews keep mentioning.',
-  },
-  scan: {
-    id: 'scan',
-    src: CDN + 'hf_20260907_031205_8162175b-402b-4612-887f-2ac14d355f9d.png',
-    alt: 'Diagnostic scan tool showing live data, plugged into a vehicle',
-    caption: 'Scan tool, live data',
-    note: 'Scan tool on the wheel, screen lit, plugged into the OBD port.',
   },
 }
 
-export const GALLERY: Shot[] = [SHOTS.van, SHOTS.loom, SHOTS.battery, SHOTS.aircon, SHOTS.bench]
+export const GALLERY: Shot[] = [SHOTS.van, SHOTS.front, SHOTS.tray, SHOTS.profile, SHOTS.wheel]

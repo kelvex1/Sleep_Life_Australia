@@ -1,0 +1,57 @@
+<!doctype html><html><head><meta charset="utf8"><style>
+html,body{margin:0;background:#06070A;overflow:hidden}
+canvas{display:block}
+</style></head><body>
+<canvas id="c"></canvas>
+<script src="/rmae/vendor/three.min.js"></script>
+<script src="/rmae/vendor/GLTFLoader.js"></script>
+<script src="/rmae/vendor/meshopt_decoder.js"></script>
+<script>
+const W = 1280, H = 900;
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(W, H, false);
+canvas.width = W; canvas.height = H;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(34, W / H, 0.1, 200);
+window.__ready = false;
+
+const loader = new THREE.GLTFLoader();
+if (window.MeshoptDecoder) loader.setMeshoptDecoder(window.MeshoptDecoder);
+loader.load('/rmae/ute.glb', (gltf) => {
+  const model = gltf.scene;
+  let b = new THREE.Box3().setFromObject(model);
+  const s = b.getSize(new THREE.Vector3());
+  model.scale.setScalar(5.4 / Math.max(s.x, s.y, s.z));
+  b = new THREE.Box3().setFromObject(model);
+  const c = b.getCenter(new THREE.Vector3());
+  model.position.set(-c.x, -b.min.y, -c.z);
+  model.traverse(o => { if (o.isMesh) { const ms = Array.isArray(o.material)?o.material:[o.material];
+    ms.forEach(m => { if (m) { m.side = THREE.DoubleSide; if (m.roughness !== undefined) m.roughness = Math.max(0.2, m.roughness - 0.1); } }); } });
+  const facing = new THREE.Group(); facing.rotation.y = Math.PI; facing.add(model);
+  scene.add(facing);
+  window.__ready = true;
+});
+
+window.__shoot = (p) => {
+  scene.background = new THREE.Color(p.bg);
+  // clear previous lights
+  [...scene.children].filter(o => o.isLight || o.isGridHelper).forEach(o => scene.remove(o));
+  scene.add(new THREE.HemisphereLight(p.sky, p.ground, p.hemi));
+  const key = new THREE.DirectionalLight(p.keyCol, p.key);
+  key.position.set(p.keyPos[0], p.keyPos[1], p.keyPos[2]); scene.add(key);
+  const rim = new THREE.DirectionalLight(p.rimCol, p.rim);
+  rim.position.set(p.rimPos[0], p.rimPos[1], p.rimPos[2]); scene.add(rim);
+  if (p.grid) {
+    const g = new THREE.GridHelper(20, 20, 0x3d5566, 0x1b2630);
+    g.material.transparent = true; g.material.opacity = p.grid; scene.add(g);
+  }
+  camera.fov = p.fov; camera.updateProjectionMatrix();
+  camera.position.set(p.cam[0], p.cam[1], p.cam[2]);
+  camera.lookAt(p.at[0], p.at[1], p.at[2]);
+  renderer.render(scene, camera);
+  return true;
+};
+</script></body></html>

@@ -10,13 +10,14 @@ export function Gallery() {
         <header className="rmae-section-head rmae-reveal">
           <span className="rmae-eyebrow">On the job</span>
           <h2 className="rmae-h2">
-            The van, the bench,
+            The rig that
             <br />
-            <em>and the work itself</em>
+            <em>turns up</em>
           </h2>
           <p className="rmae-lede">
-            Real jobs around Rockhampton and the Capricorn Coast. Every slot here is sized and
-            captioned, ready for your own photos to drop straight in.
+            A fully kitted dual cab, so the job gets finished where the vehicle is parked.
+            These are visualisations: every slot is sized and captioned, ready for photos of
+            the real van and the jobs it has done.
           </p>
         </header>
 

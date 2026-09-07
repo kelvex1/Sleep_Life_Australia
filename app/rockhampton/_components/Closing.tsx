@@ -15,7 +15,7 @@ export function Closing() {
             <div className="rmae-cta-photo" aria-hidden>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={SHOTS.scan.src}
+                src={SHOTS.profile.src}
                 alt=""
                 loading="lazy"
                 decoding="async"

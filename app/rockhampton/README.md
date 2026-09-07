@@ -64,27 +64,30 @@ sandbox blocks third-party frames.
 
 ## Photography
 
-Every image slot is a designed plate before it is a photograph. `_components/Plate.tsx`
+Every image slot is a designed plate before it is filled. `_components/Plate.tsx`
 renders the brief for the shot, and the photo fades in over it only once it has
 decoded, so a slow, blocked or missing file leaves a labelled shot card rather than a
-broken box. `_lib/media.ts` holds the shot list: id, alt text, caption and the brief.
+broken box. `_lib/media.ts` holds the shot list: id, alt text, caption and brief.
 
-The five in the "On the job" gallery, plus one behind the closing call to action:
+**What is in the slots now.** No stock photography source is reachable from the build
+environment, and the preview sandbox blocks external images anyway, so the gallery is
+filled with renders of the supplied Hilux glTF made by `scripts/shoot-ute.mjs`: five
+framings with their own lighting. They are honest stand-ins. The section copy calls
+them visualisations and does not claim they are his van or his jobs.
+
+Still wanted, and the `note` on each slot is the brief:
 
 | Slot | What to shoot |
 |---|---|
 | `van` | The RMAE ute on a job, canopy open, work light on. Late afternoon. |
-| `loom` | Hands on the tools. Crimper, loom, heat shrink, close in. |
-| `battery` | A finished dual battery job. Labelled fuse block, tidy cabling. |
-| `aircon` | Gauge set on the ports, bonnet up. Shoot on a bright day. |
-| `bench` | The workshop, tidy. This is the one the reviews keep mentioning. |
-| `scan` | Scan tool on the wheel, screen lit, plugged into the OBD port. |
+| `profile` | The van side-on with signage showing. |
+| `front` | Hands on the tools. Crimper, loom, heat shrink, close in. |
+| `tray` | A finished dual battery job. Labelled fuse block, tidy cabling. |
+| `wheel` | The workshop, tidy. This is the one the reviews keep mentioning. |
 
-The `src` values currently point at generated placeholders on the Higgsfield CDN,
-which this environment could not download into the repo. They are stand-ins for
-composition only and **must not be presented as his work**. Replace each with a real
-photograph at `public/rmae/shots/<id>.jpg` and update `src` in `_lib/media.ts`. His
-Facebook page and Google listing already have usable shots of the van and workshop.
+Drop a real photograph at `public/rmae/shots/<id>.webp`, then update that slot's
+`caption` and `note` in `_lib/media.ts` to match what it shows. His Facebook page and
+Google listing already have usable shots of the van and workshop.
 
 ## Enquiry form
 
