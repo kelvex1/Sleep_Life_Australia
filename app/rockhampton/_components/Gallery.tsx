@@ -16,8 +16,8 @@ export function Gallery() {
           </h2>
           <p className="rmae-lede">
             A fully kitted dual cab, so the job gets finished where the vehicle is parked.
-            These are visualisations: every slot is sized and captioned, ready for photos of
-            the real van and the jobs it has done.
+            These are stand-in images, not photos of his van or his jobs. Every slot is
+            sized and captioned and swaps straight out for the real thing.
           </p>
         </header>
 

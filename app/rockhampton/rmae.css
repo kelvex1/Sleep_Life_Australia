@@ -844,9 +844,11 @@ html:has(.rmae-root), body:has(.rmae-root) { background: #06070A; }
 .rmae-cta-photo img {
   width: 100%; height: 100%; object-fit: cover;
   opacity: 0; transition: opacity 1.2s ease;
-  filter: grayscale(.3) contrast(1.05);
+  /* The photograph is a texture behind the type, not the subject. Heavy
+     desaturation keeps a bright daylight shot from fighting the buttons. */
+  filter: grayscale(.75) contrast(.95) brightness(.8);
 }
-.rmae-cta-photo img.rmae-plate-on { opacity: .22; }
+.rmae-cta-photo img.rmae-plate-on { opacity: .16; }
 
 /* ============================================================
    FIND THE WORKSHOP

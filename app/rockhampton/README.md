@@ -89,10 +89,11 @@ decoded, so a slow, blocked or missing file leaves a labelled shot card rather t
 broken box. `_lib/media.ts` holds the shot list: id, alt text, caption and brief.
 
 **What is in the slots now.** No stock photography source is reachable from the build
-environment, and the preview sandbox blocks external images anyway, so the gallery is
-filled with renders of the supplied Hilux glTF made by `scripts/shoot-ute.mjs`: five
-framings with their own lighting. They are honest stand-ins. The section copy calls
-them visualisations and does not claim they are his van or his jobs.
+environment. The gallery is filled with images generated through Higgsfield
+(`nano_banana_pro`) and pulled back in through that service's own sandbox, because this
+container's egress policy blocks its CDN directly. They are honest stand-ins: the right
+kind of rig, the right kind of work, generic and unbranded. The section copy says so and
+does not claim they are his van or his jobs.
 
 Still wanted, and the `note` on each slot is the brief:
 
@@ -100,9 +101,9 @@ Still wanted, and the `note` on each slot is the brief:
 |---|---|
 | `van` | The RMAE ute on a job, canopy open, work light on. Late afternoon. |
 | `profile` | The van side-on with signage showing. |
-| `front` | Hands on the tools. Crimper, loom, heat shrink, close in. |
-| `tray` | A finished dual battery job. Labelled fuse block, tidy cabling. |
-| `wheel` | The workshop, tidy. This is the one the reviews keep mentioning. |
+| `hands` | Hands on the tools. Crimper, loom, heat shrink, close in. |
+| `install` | A finished dual battery job. Labelled fuse block, tidy cabling. |
+| `bench` | The workshop, tidy. This is the one the reviews keep mentioning. |
 
 Drop a real photograph at `public/rmae/shots/<id>.webp`, then update that slot's
 `caption` and `note` in `_lib/media.ts` to match what it shows. His Facebook page and

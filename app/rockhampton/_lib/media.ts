@@ -31,11 +31,11 @@ export const HERO_REMOTE = HERO_TAKES.workshop
  * the plate displays until an image loads, so an empty slot reads as a shot
  * list rather than a broken image.
  *
- * The images currently in place are renders of the supplied Hilux glTF, made
- * with scripts/shoot-ute.mjs. They are stand-ins, and the copy around them
- * says so: they show the kind of vehicle, not his actual van or his actual
- * jobs. Replace each with a real photograph at public/rmae/shots/<id>.webp
- * and the caption and note with what it shows.
+ * The images currently in place are generated stand-ins, not photographs of
+ * his van or his jobs. They show the right kind of rig and the right kind of
+ * work so the layout can be judged, and the copy around them says as much.
+ * Replace each with a real photograph at public/rmae/shots/<id>.webp and
+ * rewrite the caption and note to match what it shows.
  */
 export type Shot = {
   id: string
@@ -49,38 +49,38 @@ export const SHOTS: Record<string, Shot> = {
   van: {
     id: 'van',
     src: '/rmae/shots/van.webp',
-    alt: 'Dual-cab four wheel drive service ute with a bull bar and driving lights',
-    caption: 'The rig, ready to roll',
+    alt: 'Service ute parked on red dirt at sunset, canopy doors open on a lit, fitted-out interior',
+    caption: 'The workshop turns up',
     note: 'The RMAE ute on a job, canopy open, work light on. Late afternoon.',
   },
   profile: {
     id: 'profile',
     src: '/rmae/shots/profile.webp',
-    alt: 'Side profile of the service ute, showing the tray, snorkel and side steps',
-    caption: 'The workshop on the back',
+    alt: 'Side view of a dual cab ute with a canopy on the tray, parked outside a shed',
+    caption: 'Rockhampton and out',
     note: 'The van side-on with signage showing. Good for the top of the page.',
   },
-  front: {
-    id: 'front',
-    src: '/rmae/shots/front.webp',
-    alt: 'Front of the service ute, bull bar and spotlights',
-    caption: 'Front bar and lights',
+  hands: {
+    id: 'hands',
+    src: '/rmae/shots/hands.webp',
+    alt: 'Close view of hands crimping a terminal onto automotive cable in an engine bay',
+    caption: 'Crimped, sealed, labelled',
     note: 'Hands on the tools. Crimper, loom, heat shrink, close in.',
   },
-  tray: {
-    id: 'tray',
-    src: '/rmae/shots/tray.webp',
-    alt: 'Rear three quarter view of the service ute showing the open tray',
-    caption: 'Tray and canopy space',
+  install: {
+    id: 'install',
+    src: '/rmae/shots/install.webp',
+    alt: 'Finished dual battery install in a ute canopy with a DC to DC charger and fuse block',
+    caption: 'Dual battery, done properly',
     note: 'A finished dual battery job. Labelled fuse block, tidy cabling.',
   },
-  wheel: {
-    id: 'wheel',
-    src: '/rmae/shots/wheel.webp',
-    alt: 'Close view of the front wheel and guard of the service ute',
-    caption: 'Built for CQ tracks',
+  bench: {
+    id: 'bench',
+    src: '/rmae/shots/bench.webp',
+    alt: 'Auto electrical bench with cable reels, sorted terminals, crimpers and a scan tool',
+    caption: 'The bench behind the job',
     note: 'The workshop, tidy. This is the one the reviews keep mentioning.',
   },
 }
 
-export const GALLERY: Shot[] = [SHOTS.van, SHOTS.front, SHOTS.tray, SHOTS.profile, SHOTS.wheel]
+export const GALLERY: Shot[] = [SHOTS.van, SHOTS.hands, SHOTS.install, SHOTS.profile, SHOTS.bench]
