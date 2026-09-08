@@ -31,3 +31,7 @@ yarn-error.log*
 
 # netlify
 .netlify
+
+# standalone demo bundle (build output)
+/dist-rmae
+/rmae-demo-netlify.zip
