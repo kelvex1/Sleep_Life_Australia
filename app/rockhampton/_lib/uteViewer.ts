@@ -76,6 +76,135 @@ function script(src: string) {
 
 const TARGET_LENGTH = 5.4
 
+/**
+ * A small photographic studio: a dark box with a big soft top light, a warm
+ * panel on one side, a cool panel on the other and a strip behind, so the
+ * paint picks up long highlights as the vehicle turns. Rendered once through
+ * PMREMGenerator into the scene environment.
+ */
+function studioScene(THREE: any) {
+  const s = new THREE.Scene()
+  const room = new THREE.Mesh(
+    new THREE.BoxGeometry(30, 14, 30),
+    new THREE.MeshStandardMaterial({ color: 0x0a0c11, side: THREE.BackSide, roughness: 1, metalness: 0 }),
+  )
+  room.position.y = 6
+  s.add(room)
+  const panel = (w: number, h: number, color: number, intensity: number, pos: [number, number, number], look: [number, number, number]) => {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(w, h),
+      new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity), side: THREE.DoubleSide }),
+    )
+    m.position.set(...pos)
+    m.lookAt(...look)
+    s.add(m)
+  }
+  panel(16, 7, 0xffffff, 7.0, [0, 12.5, 0], [0, 0, 0])          // big soft top
+  panel(12, 3.2, 0xfff4e8, 3.6, [13, 5, 4], [0, 1, 0])          // side, barely warm
+  panel(12, 3.2, 0xe8f2ff, 3.0, [-13, 4, -2], [0, 1, 0])        // side, barely cool
+  panel(18, 1.8, 0xff9a4a, 1.6, [0, 3.0, -14], [0, 1, 0])       // amber strip behind
+  panel(10, 2.0, 0xffffff, 2.6, [0, 2.6, 14], [0, 1, 0])        // front
+  s.add(new THREE.AmbientLight(0xffffff, 0.25))
+  return s
+}
+
+/**
+ * Smooth normals that respect hard edges. A port of three's
+ * BufferGeometryUtils.toCreasedNormals (MIT), done here because the vendored
+ * bundle is core only. Reads quantised positions by hand: r147's attribute
+ * getters do not denormalise.
+ */
+function creasedNormals(THREE: any, geometry: any, creaseAngle: number) {
+  const creaseDot = Math.cos(creaseAngle)
+  const src = geometry.index ? geometry.toNonIndexed() : geometry
+  const pos = src.attributes.position
+  const arr = pos.array
+  const div = pos.normalized
+    ? (arr instanceof Int16Array ? 32767 : arr instanceof Int8Array ? 127 : arr instanceof Uint16Array ? 65535 : arr instanceof Uint8Array ? 255 : 1)
+    : 1
+  const count = pos.count
+  const px = (i: number) => arr[i * 3] / div
+  const py = (i: number) => arr[i * 3 + 1] / div
+  const pz = (i: number) => arr[i * 3 + 2] / div
+
+  // scale the hash to the model's extent, so buckets are ~1/2000 of its size
+  let maxAbs = 0
+  for (let i = 0; i < count; i++) maxAbs = Math.max(maxAbs, Math.abs(px(i)), Math.abs(py(i)), Math.abs(pz(i)))
+  const mult = 2000 / Math.max(maxAbs, 1e-6)
+  const hash = (i: number) => `${Math.round(px(i) * mult)},${Math.round(py(i) * mult)},${Math.round(pz(i) * mult)}`
+
+  const faceN = new Float32Array(count) // per-vertex face normal, xyz per tri repeated
+  const buckets = new Map<string, number[]>() // hash -> list of face indices
+  const keys: string[] = new Array(count)
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3()
+  const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), n = new THREE.Vector3()
+  for (let f = 0; f < count / 3; f++) {
+    const i = f * 3
+    a.set(px(i), py(i), pz(i)); b.set(px(i + 1), py(i + 1), pz(i + 1)); c.set(px(i + 2), py(i + 2), pz(i + 2))
+    e1.subVectors(c, b); e2.subVectors(a, b); n.crossVectors(e1, e2).normalize()
+    faceN[i] = n.x; faceN[i + 1] = n.y; faceN[i + 2] = n.z
+    for (let k = 0; k < 3; k++) {
+      const key = hash(i + k)
+      keys[i + k] = key
+      let list = buckets.get(key)
+      if (!list) { list = []; buckets.set(key, list) }
+      list.push(f)
+    }
+  }
+  const out = new Float32Array(count * 3)
+  for (let v = 0; v < count; v++) {
+    const f = Math.floor(v / 3) * 3
+    const fx = faceN[f], fy = faceN[f + 1], fz = faceN[f + 2]
+    let sx = 0, sy = 0, sz = 0
+    const list = buckets.get(keys[v])!
+    for (let k = 0; k < list.length; k++) {
+      const g = list[k] * 3
+      const gx = faceN[g], gy = faceN[g + 1], gz = faceN[g + 2]
+      if (fx * gx + fy * gy + fz * gz > creaseDot) { sx += gx; sy += gy; sz += gz }
+    }
+    const len = Math.hypot(sx, sy, sz) || 1
+    out[v * 3] = sx / len; out[v * 3 + 1] = sy / len; out[v * 3 + 2] = sz / len
+  }
+  src.setAttribute('normal', new THREE.BufferAttribute(out, 3, false))
+  return src
+}
+
+/** Fine grid, fading to nothing towards the edges of the stage. */
+function gridCanvas() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 1024
+  const g = c.getContext('2d')!
+  g.clearRect(0, 0, 1024, 1024)
+  g.strokeStyle = 'rgba(130, 200, 230, 0.7)'
+  g.lineWidth = 1
+  for (let i = 0; i <= 1024; i += 64) {
+    g.beginPath(); g.moveTo(i + 0.5, 0); g.lineTo(i + 0.5, 1024); g.stroke()
+    g.beginPath(); g.moveTo(0, i + 0.5); g.lineTo(1024, i + 0.5); g.stroke()
+  }
+  g.globalCompositeOperation = 'destination-in'
+  const fade = g.createRadialGradient(512, 512, 40, 512, 512, 500)
+  fade.addColorStop(0, 'rgba(0,0,0,0.9)')
+  fade.addColorStop(0.45, 'rgba(0,0,0,0.5)')
+  fade.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = fade
+  g.fillRect(0, 0, 1024, 1024)
+  return c
+}
+
+/** Soft dark ellipse: the contact shadow that grounds the vehicle. */
+function blobCanvas() {
+  const c = document.createElement('canvas')
+  c.width = c.height = 512
+  const g = c.getContext('2d')!
+  const grad = g.createRadialGradient(256, 256, 20, 256, 256, 250)
+  grad.addColorStop(0, 'rgba(0,0,0,0.95)')
+  grad.addColorStop(0.55, 'rgba(0,0,0,0.55)')
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+  g.fillStyle = grad
+  g.fillRect(0, 0, 512, 512)
+  return c
+}
+
 export async function createUteScene(
   canvas: HTMLCanvasElement,
   src: Sources,
@@ -99,27 +228,76 @@ export async function createUteScene(
   renderer.setClearColor(0x000000, 0)
   renderer.outputEncoding = THREE.sRGBEncoding
   renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.92
+  renderer.toneMappingExposure = 1.0
+  renderer.physicallyCorrectLights = true
+  // Real cast shadows on desktop. On phones the baked contact blob does the job.
+  renderer.shadowMap.enabled = !coarse
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 200)
 
-  // Key, fill and rim, so a dark vehicle still reads against a dark card.
-  scene.add(new THREE.HemisphereLight(0x8ec8f5, 0x070a0f, 0.55))
-  const key = new THREE.DirectionalLight(0xfff1e0, 2.9)
-  key.position.set(4, 7, 5)
+  // A studio environment is what makes paint look like paint: metallic
+  // materials with nothing to reflect render as chalk. Built procedurally from
+  // a few emissive panels so there is no HDR file to ship.
+  const pmrem = new THREE.PMREMGenerator(renderer)
+  const envTex = pmrem.fromScene(studioScene(THREE), 0.04).texture
+  scene.environment = envTex
+
+  // Key, fill and rim on top of the environment. Intensities are in
+  // physically-correct units, so they are larger than the old values.
+  scene.add(new THREE.HemisphereLight(0x9fd0ff, 0x0a0c10, 0.35))
+  const key = new THREE.DirectionalLight(0xfff6ea, 2.4)
+  key.position.set(5, 8, 4)
+  key.castShadow = !coarse
+  key.shadow.mapSize.set(2048, 2048)
+  key.shadow.camera.left = -5; key.shadow.camera.right = 5
+  key.shadow.camera.top = 5; key.shadow.camera.bottom = -5
+  key.shadow.camera.near = 1; key.shadow.camera.far = 30
+  key.shadow.bias = -0.0006
+  key.shadow.normalBias = 0.02
+  key.shadow.radius = 4
   scene.add(key)
-  const fill = new THREE.DirectionalLight(0x64b9ff, 1.0)
-  fill.position.set(-6, 3, 2)
+  const fill = new THREE.DirectionalLight(0x8cc8ff, 0.7)
+  fill.position.set(-7, 3, 3)
   scene.add(fill)
-  const rim = new THREE.DirectionalLight(0xff8a2b, 1.4)
-  rim.position.set(-3, 2, -6)
+  const rim = new THREE.DirectionalLight(0xff8a2b, 1.6)
+  rim.position.set(-3, 3, -7)
   scene.add(rim)
 
-  const grid = new THREE.GridHelper(16, 16, 0x3d5566, 0x1e2a33)
-  ;(grid.material as any).transparent = true
-  ;(grid.material as any).opacity = 0.35
-  scene.add(grid)
+  // Floor: a fine grid that fades out radially (so it reads as a stage, not
+  // a dev tool), a soft contact shadow under the vehicle, and on desktop a
+  // shadow-catching plane for the key light.
+  const floorTex = new THREE.CanvasTexture(gridCanvas())
+  floorTex.encoding = THREE.sRGBEncoding
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(22, 22),
+    new THREE.MeshBasicMaterial({ map: floorTex, transparent: true, depthWrite: false }),
+  )
+  floor.rotation.x = -Math.PI / 2
+  floor.position.y = -0.005
+  scene.add(floor)
+
+  const blobTex = new THREE.CanvasTexture(blobCanvas())
+  const blob = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, opacity: coarse ? 0.75 : 0.45 }),
+  )
+  blob.rotation.x = -Math.PI / 2
+  blob.scale.set(3.6, 6.6, 1)
+  blob.position.y = 0.002
+  scene.add(blob)
+
+  if (!coarse) {
+    const catcher = new THREE.Mesh(
+      new THREE.PlaneGeometry(22, 22),
+      new THREE.ShadowMaterial({ opacity: 0.5 }),
+    )
+    catcher.rotation.x = -Math.PI / 2
+    catcher.position.y = 0.004
+    catcher.receiveShadow = true
+    scene.add(catcher)
+  }
 
   const pivot = new THREE.Group()
   scene.add(pivot)
@@ -145,21 +323,78 @@ export async function createUteScene(
   model.position.set(-centre.x, -boxfit.min.y, -centre.z)
   pivot.add(model)
 
+  // The model is a SketchUp export: flat colours, no PBR maps, one material
+  // per part. Materials are graded by name; the body paint has no name that
+  // survived export, so the largest opaque surface is taken as the paint.
+  const tris = new Map<any, number>()
+  const seen = new Set<any>()
   model.traverse((o: any) => {
     if (!o.isMesh) return
-    o.castShadow = false
+    o.castShadow = !coarse
     o.receiveShadow = false
+    // The shipped normals are quantised to 8 bits, which reads as speckle on
+    // every curved surface. Rebuild them from the positions, keeping creases.
+    o.geometry = creasedNormals(THREE, o.geometry, Math.PI / 3.4)
     const mats = Array.isArray(o.material) ? o.material : [o.material]
+    const n = o.geometry.index ? o.geometry.index.count / 3 : o.geometry.attributes.position.count / 3
     for (const m of mats) {
       if (!m) continue
-      m.side = THREE.DoubleSide            // several panels are single sided
-      if (m.metalness !== undefined) m.metalness = Math.min(0.85, (m.metalness ?? 0.4) + 0.25)
-      if (m.roughness !== undefined) m.roughness = Math.max(0.18, (m.roughness ?? 0.6) - 0.12)
+      seen.add(m)
+      tris.set(m, (tris.get(m) || 0) + n / mats.length)
     }
   })
+  const mats = Array.from(seen)
+  let paint: any = null
+  for (const m of mats) {
+    if (m.transparent) continue
+    if (!paint || (tris.get(m) || 0) > (tris.get(paint) || 0)) paint = m
+  }
+  for (const m of mats) {
+    m.side = THREE.DoubleSide            // several panels are single sided
+    m.envMapIntensity = 1.1
+    const name = String(m.name || '').toLowerCase()
+    const glass = /glass|trans|vidro|material_4$/.test(name)
+    if (m === paint) {
+      m.metalness = 0.55
+      m.roughness = 0.24
+      m.envMapIntensity = 1.3
+      if (m.clearcoat !== undefined) { m.clearcoat = 1; m.clearcoatRoughness = 0.06 }
+    } else if (glass) {
+      m.transparent = true
+      m.opacity = Math.min(m.opacity ?? 1, 0.42)
+      m.metalness = 0.0
+      m.roughness = 0.05
+      m.envMapIntensity = 1.8
+      m.depthWrite = false
+    } else if (/rims|crom|chrome|silver|metal|reflect|seamed/.test(name)) {
+      // The rims were exported as a blend material, which is why the wheels
+      // read as mush: the spokes showed the hub geometry through themselves.
+      m.transparent = false
+      m.opacity = 1
+      m.metalness = 0.92
+      m.roughness = 0.28
+      m.envMapIntensity = 1.4
+    } else if (/tire|tyre/.test(name)) {
+      if (m.color) m.color.setHex(0x15161a)
+      m.metalness = 0.0
+      m.roughness = 0.94
+      m.envMapIntensity = 0.35
+    } else if (/plastic|charcoal|inferior|interno|housing|edge_color000/.test(name)) {
+      m.metalness = 0.05
+      m.roughness = 0.86
+      m.envMapIntensity = 0.5
+    } else {
+      m.metalness = Math.min(0.5, (m.metalness ?? 0.2) + 0.1)
+      m.roughness = Math.max(0.3, (m.roughness ?? 0.6) - 0.1)
+    }
+    m.needsUpdate = true
+  }
+  if (typeof location !== 'undefined' && location.search.includes('mats')) {
+    ;(window as any).__rmaeMats = mats.map((m: any) => [m.name, Math.round(tris.get(m) || 0), m === paint, m.transparent])
+  }
 
-  let yaw = 0.72
-  let pitch = 0.3
+  let yaw = 0.95
+  let pitch = 0.2
   let dist = 11
   let dragging = false
   /** 'spin' when the drag started on the vehicle, 'pan' when it started on the
@@ -186,7 +421,7 @@ export async function createUteScene(
     // Pull back on narrow cards so the whole vehicle stays in frame. Phones
     // start closer, otherwise a 5.4m ute on a 300px canvas is a postage stamp
     // and the hotspots land on top of each other.
-    dist = (coarse ? 9.6 : 11) * Math.max(1, 1.55 / camera.aspect)
+    dist = (coarse ? 8.2 : 9.4) * Math.max(1, 1.55 / camera.aspect)
     camera.updateProjectionMatrix()
   }
 
@@ -339,6 +574,10 @@ export async function createUteScene(
       canvas.removeEventListener('pointercancel', onUp)
       window.removeEventListener('resize', resize)
       vis.disconnect()
+      envTex.dispose()
+      pmrem.dispose()
+      floorTex.dispose()
+      blobTex.dispose()
       renderer.dispose()
     },
     onFrame(cb) { listener = cb },

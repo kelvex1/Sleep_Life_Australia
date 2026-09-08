@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Phone, Menu, X } from 'lucide-react'
+import { Phone, Menu, X, ArrowRight } from 'lucide-react'
 
 const LINKS = [
   { href: '#services', label: 'Services' },
@@ -24,7 +24,7 @@ export function Nav() {
   }, [])
 
   return (
-    <header className={`rmae-nav${stuck ? ' rmae-nav-stuck' : ''}`}>
+    <header className={`rmae-nav${stuck || open ? ' rmae-nav-stuck' : ''}${open ? ' rmae-nav-open' : ''}`}>
       <div className="rmae-shell rmae-nav-in">
         <a className="rmae-brand" href="#top" aria-label="Rockhampton Mobile Auto Electrics, home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -60,21 +60,21 @@ export function Nav() {
       </div>
 
       {open && (
-        <div
-          className="rmae-shell"
-          style={{ paddingBottom: '1rem', display: 'grid', gap: '.15rem' }}
-        >
+        <nav className="rmae-shell rmae-menu" aria-label="Primary, mobile">
           {LINKS.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              style={{ padding: '.6rem .2rem', color: 'var(--text-2)' }}
-            >
+            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>
               {l.label}
             </a>
           ))}
-        </div>
+          <div className="rmae-menu-actions">
+            <a className="rmae-btn" href="tel:+61427667996" onClick={() => setOpen(false)}>
+              <Phone size={16} strokeWidth={2.4} /> 0427 667 996
+            </a>
+            <a className="rmae-btn rmae-btn-ghost" href="#quote" onClick={() => setOpen(false)}>
+              Get a quote <ArrowRight size={16} />
+            </a>
+          </div>
+        </nav>
       )}
     </header>
   )

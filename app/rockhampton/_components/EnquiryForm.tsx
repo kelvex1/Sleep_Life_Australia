@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, Check, ShieldCheck, Loader2 } from 'lucide-react'
 import { addEnquiry, ref as makeRef } from '../_lib/store'
 
@@ -31,6 +31,14 @@ export function EnquiryForm() {
     urgency: 'this-week' as 'today' | 'this-week' | 'planning',
     notes: '',
   })
+
+  // The confirmation card is a third the height of the form. On a phone the
+  // hero is not viewport-locked, so the page would otherwise land on whatever
+  // slid up into the gap, and the "see it land in the dashboard" link is missed.
+  useEffect(() => {
+    if (state !== 'sent') return
+    document.getElementById('quote')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [state])
 
   const set = (k: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,

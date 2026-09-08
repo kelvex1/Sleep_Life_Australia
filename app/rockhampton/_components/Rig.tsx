@@ -109,7 +109,8 @@ export function Rig() {
             {!panned && (
               <div className="rmae-stage-hint">
                 <Move3d size={12} strokeWidth={2.2} aria-hidden />
-                Drag the ute to spin · background to move it
+                <span className="rmae-hint-long">Drag the ute to spin · background to move it</span>
+                <span className="rmae-hint-short">Drag the ute to spin</span>
               </div>
             )}
             {panned && (

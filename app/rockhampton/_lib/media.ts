@@ -2,10 +2,12 @@
  * Hero background footage.
  *
  * The clips were generated with Higgsfield (Seedance 2.5, 1080p, 8s, silent).
- * This container's egress policy blocks the Higgsfield CDN, so the files are
- * not committed. The <video> lists the local path first and the CDN URL
- * second: drop the chosen clip at public/rmae/hero.mp4 and it takes over with
- * no code change, otherwise the browser falls through to the remote copy.
+ * The chosen take (workshop) is self-hosted at public/rmae/hero.mp4: the CDN
+ * original is HEVC at 18MB, so it was re-encoded to H.264 1080p at 2.2MB
+ * (ffmpeg, libx264, crf 24, faststart), which also fixes playback in browsers
+ * without HEVC support. The <video> lists the local path first and the CDN URL
+ * second as a fallback only. To swap takes, re-encode the other clip the same
+ * way and overwrite the local file.
  */
 export const HERO_LOCAL = '/rmae/hero.mp4'
 

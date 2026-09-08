@@ -59,6 +59,9 @@ const SERVICES = [
 export function Services() {
   // Cheap pointer-tracked glow + tilt. No library, no layout thrash.
   const onMove = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    // A finger scrolling past a card is not a hover: tilting it mid-scroll
+    // makes the whole grid twitch on a phone.
+    if (e.pointerType === 'touch') return
     const el = e.currentTarget
     const r = el.getBoundingClientRect()
     const x = (e.clientX - r.left) / r.width

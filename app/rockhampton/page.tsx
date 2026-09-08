@@ -13,6 +13,7 @@ import { Reviews } from './_components/Reviews'
 import { Area } from './_components/Area'
 import { FindUs } from './_components/FindUs'
 import { Closing } from './_components/Closing'
+import { CallBar } from './_components/CallBar'
 import { useReveal } from './_lib/useReveal'
 
 export default function RockhamptonPage() {
@@ -42,6 +43,7 @@ export default function RockhamptonPage() {
           <Closing />
         </div>
       </div>
+      <CallBar />
     </main>
   )
 }

@@ -69,6 +69,18 @@ lower and antialiasing is off on coarse pointers, the camera starts closer so th
 vehicle is not a postage stamp on a 390px screen, hotspots get 44px touch targets, and
 an IntersectionObserver stops rendering entirely once the section scrolls away.
 
+**The look (8 Sep pass).** The model is a SketchUp export: flat colours, no PBR
+maps, and after meshopt its normals are quantised to 8 bits, which rendered as
+speckle on every curved surface and made the wheels a grey mush. Three things fixed
+it, all in `_lib/uteViewer.ts`: normals are rebuilt at load with a crease-aware
+smoothing pass (a port of three's `toCreasedNormals`, since the vendored bundle is
+core only); the scene gets a procedural studio environment through
+`PMREMGenerator` so the paint has something to reflect; and materials are graded by
+name (paint = the largest opaque surface, glass, chrome and rims, tyres forced dark,
+the rims un-blended because they were exported transparent). The grid helper became a
+radially fading grid texture with a contact-shadow blob, plus real cast shadows on
+desktop only. Judge it on a real GPU: SwiftShader screenshots have no antialiasing.
+
 **Licensing:** the Hilux model is a third-party asset you supplied. Confirm its licence
 covers commercial use on a client site, and whether attribution is required, before this
 goes live. A model of a trademarked vehicle can carry terms of its own.
@@ -117,7 +129,21 @@ which is what makes the live demo work. Wiring it to a real inbox is a one-file 
 replace `addEnquiry` with a POST to a form endpoint (Netlify Forms, a Supabase table,
 or an email function) and keep the same shape.
 
+## Deploy
+
+The demo is live at https://rockhampton-auto-electrics.netlify.app (Netlify project
+`rockhampton-auto-electrics`, Syvex team, `/admin` for the dashboard). It is a
+standalone site built from `dist-rmae/`, not the Sleep Life Australia deploy. To
+push a new build:
+
+    npm install && npx next build && bash scripts/build-demo-bundle.sh
+    npx netlify-cli deploy --dir=dist-rmae --prod --no-build \
+      --site 5235902a-7d6d-4563-87fd-4db6718fd903
+
 ## Notes
+
+- The hero video is self-hosted at `public/rmae/hero.mp4` (H.264 1080p, 2.2 MB,
+  re-encoded from the 18 MB HEVC Higgsfield original). See `_lib/media.ts`.
 
 - Fonts (Anton, Space Grotesk, JetBrains Mono) are self-hosted in
   `public/rmae/fonts/`: latin subsets, ~66 KB total, SIL Open Font License. No
@@ -128,3 +154,13 @@ or an email function) and keep the same shape.
 - `netlify.toml` gained two redirects so `/rockhampton` and `/rockhampton/admin`
   resolve past the SPA catch-all.
 - Everything honours `prefers-reduced-motion`.
+- **Phone pass (8 Sep 2026).** Both pages were checked at iPhone 13 size with
+  Playwright, not just narrowed in a desktop browser. The mobile rules sit at the
+  bottom of `rmae.css` and `admin/admin.css` under `MOBILE PASS` / `PHONE PASS`.
+  Things that matter if you touch them: the sticky call bar is rendered by
+  `_components/CallBar.tsx` as a direct child of the page (inside the z-indexed
+  content wrapper the hero card painted over it); form fields are 16px on phones
+  so iOS does not zoom on focus; the animated grain, the loom drop-shadows and the
+  blur on reveals are switched off under 760px for frame rate; the card tilt in
+  Services ignores touch pointers; the enquiries table in the admin turns into a
+  card stack under 600px using the column order in the markup.

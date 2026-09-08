@@ -104,14 +104,6 @@ export function Closing() {
         </div>
       </footer>
 
-      <div className="rmae-callbar">
-        <a className="rmae-btn" href="tel:+61427667996">
-          <Phone size={16} strokeWidth={2.4} /> Call now
-        </a>
-        <a className="rmae-btn rmae-btn-ghost" href="#quote">
-          Get a quote
-        </a>
-      </div>
     </>
   )
 }
