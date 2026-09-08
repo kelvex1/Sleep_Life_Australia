@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Wrench, Clock3, Receipt, RotateCcw, Move3d } from 'lucide-react'
-import { HOTSPOTS, createUteScene, type Projected } from '../_lib/uteViewer'
+import { HOTSPOTS, createUteScene, type Projected, type Scene } from '../_lib/uteViewer'
 
 const PROMISES = [
   { icon: Clock3, title: 'We turn up when we say', body: 'You get a time window and a call when the van is on its way. No all-day waiting.' },
@@ -16,13 +16,15 @@ export function Rig() {
   const [active, setActive] = useState(0)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [panned, setPanned] = useState(false)
+  const scene = useRef<Scene | null>(null)
   const hot = HOTSPOTS[active]
 
   useEffect(() => {
     const el = canvas.current
     if (!el) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let scene: { destroy: () => void } | null = null
+    let live: Scene | null = null
     let cancelled = false
 
     // three.js and the model only download once the section is on screen.
@@ -41,8 +43,16 @@ export function Rig() {
       )
         .then((s) => {
           if (cancelled) { s.destroy(); return }
-          scene = s
+          live = s
+          scene.current = s
+          let wasPanned = false
           s.onFrame((pts: Projected[]) => {
+            // only touch React state when the answer actually changes
+            const now = s.isPanned()
+            if (now !== wasPanned) {
+              wasPanned = now
+              setPanned(now)
+            }
             pts.forEach((p, i) => {
               const pin = pins.current[i]
               if (!pin) return
@@ -66,7 +76,8 @@ export function Rig() {
     return () => {
       cancelled = true
       io.disconnect()
-      scene?.destroy()
+      live?.destroy()
+      scene.current = null
     }
   }, [])
 
@@ -95,10 +106,21 @@ export function Rig() {
 
             {!ready && !failed && <div className="rmae-stage-loading">Loading model…</div>}
             {failed && <div className="rmae-stage-loading">3D model unavailable</div>}
-            <div className="rmae-stage-hint">
-              <Move3d size={12} strokeWidth={2.2} aria-hidden />
-              Drag to spin
-            </div>
+            {!panned && (
+              <div className="rmae-stage-hint">
+                <Move3d size={12} strokeWidth={2.2} aria-hidden />
+                Drag the ute to spin · background to move it
+              </div>
+            )}
+            {panned && (
+              <button
+                className="rmae-stage-reset"
+                onClick={() => scene.current?.recentre()}
+              >
+                <RotateCcw size={11} strokeWidth={2.4} aria-hidden />
+                Recentre
+              </button>
+            )}
             <div className="rmae-stage-tag">
               <RotateCcw size={11} strokeWidth={2.2} aria-hidden />
               Live model

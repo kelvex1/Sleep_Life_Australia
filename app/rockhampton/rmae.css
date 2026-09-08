@@ -570,10 +570,13 @@
   background: rgba(56,225,255,.08); box-shadow: inset 0 0 0 1px rgba(56,225,255,.22);
 }
 
-.rmae-pins { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity .6s ease; }
+/* The overlay spans the whole stage, so it must not swallow the drags meant
+   for the canvas underneath; only the pins themselves take pointer events. */
+.rmae-pins { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity .6s ease; pointer-events: none; }
 .rmae-pins-on { opacity: 1; }
 .rmae-pin3 {
   position: absolute; top: 0; left: 0; width: 26px; height: 26px; padding: 0;
+  pointer-events: auto;
   display: grid; place-items: center; border-radius: 50%;
   will-change: transform;
 }
@@ -910,4 +913,19 @@ html:has(.rmae-root), body:has(.rmae-root) { background: #06070A; }
   /* give the canvas the width back on a phone */
   .rmae-rig { padding: .9rem .6rem; }
   .rmae-stage { aspect-ratio: 4 / 3; }
+}
+
+/* recentre appears only once the view has been dragged off centre */
+.rmae-stage-reset {
+  position: absolute; right: .8rem; bottom: .8rem; z-index: 5;
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-family: var(--font-mono); font-size: .6rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--text-2);
+  padding: .45rem .7rem; border-radius: 999px;
+  background: rgba(6,7,10,.72); box-shadow: inset 0 0 0 1px var(--line-2);
+  animation: rmae-pop .35s cubic-bezier(.16,1,.3,1);
+}
+.rmae-stage-reset:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--volt); }
+@media (max-width: 620px) {
+  .rmae-stage-hint { max-width: 62%; line-height: 1.35; }
 }

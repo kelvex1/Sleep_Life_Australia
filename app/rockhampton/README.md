@@ -52,8 +52,18 @@ panel from every angle as the model turns. They are DOM buttons projected throug
 camera each frame, so they stay keyboard reachable and fade out when they pass behind
 the vehicle.
 
+**Two gestures, decided on pointerdown.** A raycast on press asks whether the pointer
+landed on the vehicle: if it did, the drag spins it; if it landed on empty space, the
+drag slides the whole view in the camera's screen plane, so the ute tracks the pointer
+one to one. The mode is fixed for the life of the gesture, so a drag never changes its
+mind halfway. The hit test costs about 13ms and runs once per press, not per frame.
+Panning is clamped so the vehicle cannot be dragged out of frame, and a Recentre control
+appears once the view has moved (double click or double tap does the same).
+
 **On a phone:** the canvas takes `touch-action: pan-y`, so a vertical swipe still
-scrolls the page and a horizontal one spins the rig; only a mouse pitches the camera.
+scrolls the page and a horizontal one spins or pans the rig; only a mouse pitches the
+camera or pans vertically. That is a deliberate trade: taking the vertical axis would
+mean hijacking page scroll on a section most people meet mid-scroll.
 A flick carries momentum before settling back into the idle turn. Pixel ratio is capped
 lower and antialiasing is off on coarse pointers, the camera starts closer so the
 vehicle is not a postage stamp on a 390px screen, hotspots get 44px touch targets, and

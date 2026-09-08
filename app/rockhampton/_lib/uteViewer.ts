@@ -37,6 +37,9 @@ export type Projected = { x: number; y: number; depth: number; front: boolean; v
 export type Scene = {
   destroy: () => void
   onFrame: (cb: (pts: Projected[]) => void) => void
+  /** True once the view has been panned away from its starting position. */
+  isPanned: () => boolean
+  recentre: () => void
 }
 
 export type Sources = {
@@ -159,11 +162,16 @@ export async function createUteScene(
   let pitch = 0.3
   let dist = 11
   let dragging = false
+  /** 'spin' when the drag started on the vehicle, 'pan' when it started on the
+      background. Decided once on pointerdown by a raycast, so a gesture never
+      changes its mind halfway through. */
+  let mode: 'spin' | 'pan' = 'spin'
   let lastX = 0
   let lastY = 0
   let spin = 0
   let onScreen = true
   let raf = 0
+  let recentring = false
   let listener: ((pts: Projected[]) => void) | null = null
   let w = 1
   let h = 1
@@ -182,6 +190,29 @@ export async function createUteScene(
     camera.updateProjectionMatrix()
   }
 
+  // The point the camera orbits. Panning slides it in the camera's own screen
+  // plane, which is what makes the vehicle track the pointer one to one.
+  const HOME = new THREE.Vector3(0, 0.95, 0)
+  const target = HOME.clone()
+  const PAN_LIMIT = 2.2
+  const raycaster = new THREE.Raycaster()
+  const ndc = new THREE.Vector2()
+  const right = new THREE.Vector3()
+  const up = new THREE.Vector3()
+
+  /** Did this pointer land on the vehicle, or on empty space behind it? */
+  function hitsModel(e: PointerEvent) {
+    const r = canvas.getBoundingClientRect()
+    ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1)
+    raycaster.setFromCamera(ndc, camera)
+    return raycaster.intersectObject(model, true).length > 0
+  }
+
+  /** Metres of world movement per pixel of drag, at the target's depth. */
+  function metresPerPixel() {
+    return (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, h)
+  }
+
   const anchor = new THREE.Vector3()
   function frame() {
     raf = 0
@@ -194,12 +225,19 @@ export async function createUteScene(
         yaw += 0.0022
       }
     }
+    if (recentring) {
+      target.lerp(HOME, 0.14)
+      if (target.distanceTo(HOME) < 0.005) {
+        target.copy(HOME)
+        recentring = false
+      }
+    }
     camera.position.set(
-      Math.sin(yaw) * Math.cos(pitch) * dist,
-      Math.sin(pitch) * dist + 0.7,
-      Math.cos(yaw) * Math.cos(pitch) * dist,
+      target.x + Math.sin(yaw) * Math.cos(pitch) * dist,
+      target.y + Math.sin(pitch) * dist + 0.7 - 0.95,
+      target.z + Math.cos(yaw) * Math.cos(pitch) * dist,
     )
-    camera.lookAt(0, 0.95, 0)
+    camera.lookAt(target)
     renderer.render(scene, camera)
 
     if (listener) {
@@ -233,6 +271,9 @@ export async function createUteScene(
   function onDown(e: PointerEvent) {
     dragging = true
     spin = 0
+    recentring = false
+    mode = hitsModel(e) ? 'spin' : 'pan'
+    canvas.style.cursor = mode === 'pan' ? 'move' : 'grabbing'
     lastX = e.clientX
     lastY = e.clientY
     canvas.setPointerCapture(e.pointerId)
@@ -241,21 +282,44 @@ export async function createUteScene(
   function onMove(e: PointerEvent) {
     if (!dragging) return
     const dx = e.clientX - lastX
-    yaw -= dx * 0.008
-    spin = -dx * 0.008
-    // touch keeps the page scrollable vertically, so only mice pitch the camera
-    if (e.pointerType !== 'touch') {
-      pitch = Math.max(0.03, Math.min(0.72, pitch + (e.clientY - lastY) * 0.004))
+    const dy = e.clientY - lastY
+
+    if (mode === 'pan') {
+      const k = metresPerPixel()
+      const m = camera.matrixWorld.elements
+      right.set(m[0], m[1], m[2])
+      up.set(m[4], m[5], m[6])
+      target.addScaledVector(right, -dx * k)
+      // touch keeps the page scrollable, so a finger only pans sideways
+      if (e.pointerType !== 'touch') target.addScaledVector(up, dy * k)
+      target.x = Math.max(HOME.x - PAN_LIMIT, Math.min(HOME.x + PAN_LIMIT, target.x))
+      target.y = Math.max(HOME.y - 0.9, Math.min(HOME.y + 1.5, target.y))
+      target.z = Math.max(HOME.z - PAN_LIMIT, Math.min(HOME.z + PAN_LIMIT, target.z))
+    } else {
+      yaw -= dx * 0.008
+      spin = -dx * 0.008
+      if (e.pointerType !== 'touch') {
+        pitch = Math.max(0.03, Math.min(0.72, pitch + dy * 0.004))
+      }
     }
+
     lastX = e.clientX
     lastY = e.clientY
     schedule()
   }
+  /** Double click or double tap puts it back where it started. */
+  function onDouble() {
+    recentring = true
+    schedule()
+  }
   function onUp(e: PointerEvent) {
     dragging = false
+    canvas.style.cursor = 'grab'
     try { canvas.releasePointerCapture(e.pointerId) } catch { /* pointer already gone */ }
   }
 
+  canvas.style.cursor = 'grab'
+  canvas.addEventListener('dblclick', onDouble)
   canvas.addEventListener('pointerdown', onDown)
   canvas.addEventListener('pointermove', onMove)
   canvas.addEventListener('pointerup', onUp)
@@ -268,6 +332,7 @@ export async function createUteScene(
   return {
     destroy() {
       if (raf) cancelAnimationFrame(raf)
+      canvas.removeEventListener('dblclick', onDouble)
       canvas.removeEventListener('pointerdown', onDown)
       canvas.removeEventListener('pointermove', onMove)
       canvas.removeEventListener('pointerup', onUp)
@@ -277,5 +342,7 @@ export async function createUteScene(
       renderer.dispose()
     },
     onFrame(cb) { listener = cb },
+    isPanned: () => target.distanceTo(HOME) > 0.05,
+    recentre: () => { recentring = true; schedule() },
   }
 }
