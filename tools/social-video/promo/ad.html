@@ -1,0 +1,251 @@
+<!doctype html><meta charset="utf-8">
+<style>
+  @font-face{font-family:'ArchivoB';src:url('/fonts/Archivo-Black.ttf') format('truetype');}
+  @font-face{font-family:'ArchivoR';src:url('/fonts/Archivo.ttf') format('truetype');}
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+<canvas id="c"></canvas>
+<script>
+/* ---------------------------------------------------------------------------
+   "Booked out. Still broke."
+
+   The argument the ad makes: a trades owner does not have a lead problem, they
+   have a job-mix problem. So the piece shows a week filling with small jobs and
+   a revenue bar that barely moves, then the same week rebuilt out of fewer,
+   larger jobs. The numbers are illustrative of the idea, not client results.
+
+   Every frame is a pure function of its index, so the render is deterministic
+   and can be driven one frame at a time rather than screen-recorded.
+--------------------------------------------------------------------------- */
+const q=new URLSearchParams(location.search);
+const W=+(q.get('w')||1080), H=+(q.get('h')||1920);
+const FPS=30, DUR=20.0, NFRAMES=Math.round(DUR*FPS);
+const cv=document.getElementById('c'); cv.width=W; cv.height=H;
+const x=cv.getContext('2d');
+
+const RED='#E8331C', WHT='#EFEAE3', TEAL='#22A6CE', DIM='#8B8681', INK='#08080A';
+
+/* ---- easing ------------------------------------------------------------- */
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const seg=(t,a,b)=>cl((t-a)/(b-a),0,1);
+const outQ=u=>1-Math.pow(1-u,4);
+const outC=u=>1-Math.pow(1-u,3);
+const inOut=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+const smooth=u=>u*u*u*(u*(u*6-15)+10);
+
+/* ---- the week ----------------------------------------------------------- */
+const COLS=6, ROWS=4;   // 24 small jobs fill it exactly - no dead row
+const GX=96, GY=790, GW=W-192, GH=700;
+const CW=GW/COLS, CH=GH/ROWS;
+function rng(s){return()=>((s=s*1664525+1013904223|0)>>>8)/16777216;}
+const r1=rng(7);
+const SMALL=[];
+for(let i=0;i<24;i++){
+  const c=i%COLS, rw=Math.floor(i/COLS);
+  SMALL.push({c,rw,v:[95,140,180,210,240,260,320,150,190,120][i%10]});
+}
+const BIG=[{c:0,rw:0,w:2,h:2,v:3800},{c:2,rw:0,w:2,h:1,v:1950},
+           {c:4,rw:0,w:2,h:2,v:2400},{c:2,rw:1,w:2,h:1,v:1600},
+           {c:0,rw:2,w:3,h:2,v:2900},{c:3,rw:2,w:3,h:2,v:1950}];
+
+function roundRect(a,b,w,h,r){
+  x.beginPath();
+  x.moveTo(a+r,b); x.arcTo(a+w,b,a+w,b+h,r); x.arcTo(a+w,b+h,a,b+h,r);
+  x.arcTo(a,b+h,a,b,r); x.arcTo(a,b,a+w,b,r); x.closePath();
+}
+function money(n){return '$'+n.toLocaleString('en-AU');}
+
+/* ---- background: the same red/black the rest of the brand uses ---------- */
+function bg(t){
+  x.fillStyle=INK; x.fillRect(0,0,W,H);
+  const g1=x.createRadialGradient(W*1.02,H*0.30,0,W*1.02,H*0.30,W*1.05);
+  g1.addColorStop(0,'rgba(232,51,28,0.42)'); g1.addColorStop(1,'rgba(232,51,28,0)');
+  x.fillStyle=g1; x.fillRect(0,0,W,H);
+  const g2=x.createRadialGradient(-W*0.06,H*0.72,0,-W*0.06,H*0.72,W*0.95);
+  g2.addColorStop(0,'rgba(24,120,168,0.34)'); g2.addColorStop(1,'rgba(24,120,168,0)');
+  x.fillStyle=g2; x.fillRect(0,0,W,H);
+  // a slow drift so the field is never static
+  const d=Math.sin(t*0.5)*40;
+  const g3=x.createRadialGradient(W*0.5+d,H*1.06,0,W*0.5+d,H*1.06,W*0.8);
+  g3.addColorStop(0,'rgba(232,86,28,0.20)'); g3.addColorStop(1,'rgba(232,86,28,0)');
+  x.fillStyle=g3; x.fillRect(0,0,W,H);
+}
+
+function track(s,txt,px,tr){
+  x.font=s; let w=0;
+  for(const ch of txt) w+=x.measureText(ch).width+tr;
+  return w-tr;
+}
+function drawTrack(s,txt,px,py,tr,col,al){
+  x.save(); x.globalAlpha=al; x.fillStyle=col; x.font=s;
+  let cx=px; for(const ch of txt){ x.fillText(ch,cx,py); cx+=x.measureText(ch).width+tr; }
+  x.restore();
+}
+
+/* ---- beats -------------------------------------------------------------- */
+function hook(t){
+  const a1=seg(t,0.10,0.50), a2=seg(t,0.62,1.02);
+  const out=1-seg(t,2.30,2.62);
+  x.save(); x.globalAlpha=out;
+  let u=outQ(a1);
+  x.save(); x.translate(96,H*0.40);
+  x.globalAlpha=out*u; x.scale(1+(1-u)*0.13,1+(1-u)*0.13);
+  x.fillStyle=WHT; x.font='700 168px ArchivoB'; x.fillText('BOOKED',0,0); x.fillText('OUT.',0,178);
+  x.restore();
+  u=outQ(a2);
+  x.save(); x.translate(96,H*0.40+372);
+  x.globalAlpha=out*u; x.scale(1+(1-u)*0.13,1+(1-u)*0.13);
+  x.fillStyle=RED; x.font='700 168px ArchivoB'; x.fillText('STILL',0,0); x.fillText('BROKE.',0,178);
+  x.restore();
+  x.restore();
+}
+
+function label(t,a,b,txt,col,py,size,tr){
+  const al=Math.min(outC(seg(t,a,a+0.34)),1-seg(t,b-0.30,b));
+  if(al<=0.01) return;
+  let px=size;                                    // shrink to the safe area
+  while(px>26 && track(`700 ${px}px ArchivoB`,txt,px,tr) > W-192) px-=2;
+  drawTrack(`700 ${px}px ArchivoB`,txt,96,py,tr,col,al);
+}
+
+function grid(t){
+  // header counters
+  const app=outC(seg(t,2.45,2.95));
+  if(app>0.01){
+    const fade=1-seg(t,18.4,19.0);
+    drawTrack('400 30px ArchivoR','THIS WEEK',96,706,7,DIM,app*0.9*fade);
+  }
+  // frame of the week
+  const gA=outC(seg(t,2.40,2.85))*(1-seg(t,18.4,19.0));
+  if(gA>0.01){
+    x.save(); x.globalAlpha=gA*0.16; x.strokeStyle=WHT; x.lineWidth=2;
+    for(let c=0;c<=COLS;c++){x.beginPath();x.moveTo(GX+c*CW,GY);x.lineTo(GX+c*CW,GY+GH);x.stroke();}
+    for(let r=0;r<=ROWS;r++){x.beginPath();x.moveTo(GX,GY+r*CH);x.lineTo(GX+GW,GY+r*CH);x.stroke();}
+    x.restore();
+  }
+  // the small jobs cascade in
+  const clear=seg(t,9.6,11.2);
+  SMALL.forEach((s,i)=>{
+    const st=2.72+i*0.078;
+    const a=outQ(seg(t,st,st+0.42));
+    if(a<=0.01) return;
+    const gone=smooth(cl((clear-i*0.010)/0.50,0,1));
+    const al=a*(1-gone);
+    if(al<=0.01) return;
+    const px=GX+s.c*CW+10, py=GY+s.rw*CH+10;
+    const pw=CW-20, ph=CH-20;
+    const dy=(1-a)*34, sc=0.88+0.12*a;
+    x.save(); x.globalAlpha=al;
+    x.translate(px+pw/2,py+ph/2+dy); x.scale(sc,sc); x.translate(-pw/2,-ph/2);
+    roundRect(0,0,pw,ph,14);
+    x.fillStyle='rgba(238,234,226,0.09)'; x.fill();
+    x.strokeStyle='rgba(238,234,226,0.20)'; x.lineWidth=2; x.stroke();
+    x.fillStyle=DIM; x.font='700 34px ArchivoB';
+    const m=money(s.v); x.fillText(m,(pw-x.measureText(m).width)/2,ph/2+12);
+    x.restore();
+  });
+  // the right jobs arrive
+  BIG.forEach((s,i)=>{
+    const st=11.5+i*0.16;
+    const a=outQ(seg(t,st,st+0.52));
+    if(a<=0.01) return;
+    const fade=1-seg(t,18.4,19.0);
+    const px=GX+s.c*CW+10, py=GY+s.rw*CH+10;
+    const pw=s.w*CW-20, ph=s.h*CH-20;
+    const sc=0.9+0.1*a;
+    x.save(); x.globalAlpha=a*fade;
+    x.translate(px+pw/2,py+ph/2); x.scale(sc,sc); x.translate(-pw/2,-ph/2);
+    roundRect(0,0,pw,ph,16);
+    const g=x.createLinearGradient(0,0,pw,ph);
+    g.addColorStop(0,'rgba(232,51,28,0.34)'); g.addColorStop(1,'rgba(232,51,28,0.13)');
+    x.fillStyle=g; x.fill();
+    x.strokeStyle='rgba(232,51,28,0.85)'; x.lineWidth=3; x.stroke();
+    x.fillStyle=WHT; x.font='700 '+(s.w>2?60:48)+'px ArchivoB';
+    const m=money(s.v); x.fillText(m,(pw-x.measureText(m).width)/2,ph/2+18);
+    x.restore();
+  });
+}
+
+function scan(t){
+  const u=seg(t,9.4,11.0);
+  if(u<=0||u>=1) return;
+  const y=GY-40+(GH+80)*inOut(u);
+  const g=x.createLinearGradient(0,y-90,0,y+90);
+  g.addColorStop(0,'rgba(34,166,206,0)');
+  g.addColorStop(0.5,'rgba(34,166,206,0.50)');
+  g.addColorStop(1,'rgba(34,166,206,0)');
+  x.fillStyle=g; x.fillRect(0,y-90,W,180);
+  x.fillStyle='rgba(180,235,255,0.9)'; x.fillRect(0,y-2,W,4);
+}
+
+function readout(t){
+  const app=outC(seg(t,4.2,4.8)), fade=1-seg(t,18.4,19.0);
+  if(app<=0.01) return;
+  // jobs / hours / revenue, counting to the "before" then to the "after"
+  const p1=smooth(seg(t,4.2,7.6)), p2=smooth(seg(t,11.5,13.2));
+  const jobs=Math.round(24*p1-(24-6)*p2);
+  const hours=Math.round(58*p1-(58-31)*p2);
+  const rev=Math.round(4180*p1+(14600-4180)*p2);
+  const box=(lx,lab,val,col)=>{
+    drawTrack('400 26px ArchivoR',lab,lx,1636,6,DIM,app*0.85*fade);
+    x.save(); x.globalAlpha=app*fade; x.fillStyle=col;
+    x.font='700 72px ArchivoB'; x.fillText(val,lx,1712); x.restore();
+  };
+  box(96,'JOBS',String(jobs),WHT);
+  box(340,'HOURS',String(hours),WHT);
+  box(640,'BANKED',money(rev),seg(t,11.5,12.1)>0?RED:WHT);
+  // the bar that barely moves, then does
+  const bx=96,by=1760,bw=W-192,bh=14;
+  x.save(); x.globalAlpha=app*fade;
+  roundRect(bx,by,bw,bh,7); x.fillStyle='rgba(238,234,226,0.12)'; x.fill();
+  const frac=cl(rev/16000,0,1);
+  roundRect(bx,by,Math.max(6,bw*frac),bh,7);
+  x.fillStyle=rev>6000?RED:'rgba(238,234,226,0.45)'; x.fill();
+  x.restore();
+}
+
+function card(t){
+  const u=seg(t,19.0,20.0);
+  if(u<=0) return;
+  const a=outC(seg(t,19.0,19.45));
+  x.save(); x.globalAlpha=a; x.fillStyle='rgba(8,8,10,0.94)'; x.fillRect(0,0,W,H); x.restore();
+  drawTrack('700 152px ArchivoB','SYVEX',96,H*0.47,10,WHT,outC(seg(t,19.15,19.6)));
+  x.save(); x.globalAlpha=outC(seg(t,19.3,19.7)); x.fillStyle=RED;
+  x.fillRect(96,H*0.47+42,190,8); x.restore();
+  drawTrack('400 40px ArchivoR','The right jobs. Not just more of them.',96,H*0.47+124,0,WHT,
+            outC(seg(t,19.4,19.85)));
+  drawTrack('700 36px ArchivoB','SYVEX.XYZ',96,H*0.47+200,8,RED,outC(seg(t,19.55,20.0)));
+}
+
+function grain(t){
+  const n=1400, s=(t*97)|0;
+  const g=rng(s+11);
+  x.save(); x.globalAlpha=0.055; x.fillStyle='#fff';
+  for(let i=0;i<n;i++) x.fillRect(g()*W|0,g()*H|0,2,2);
+  x.restore();
+}
+
+function draw(t){
+  bg(t);
+  if(t<2.6) hook(t);
+  grid(t);
+  scan(t);
+  readout(t);
+  label(t,2.62,4.30,'A FULL WEEK.',WHT,644,54,3);
+  label(t,7.90,9.40,"THAT'S NOT A LEAD PROBLEM.",WHT,644,50,3);
+  label(t,9.60,11.30,"IT'S A JOB-MIX PROBLEM.",RED,644,50,3);
+  label(t,11.90,14.20,'SAME WEEK. BETTER WORK.',WHT,644,54,3);
+  label(t,14.40,18.30,'MORE MARGIN. FEWER HOURS.',RED,644,54,3);
+  card(t);
+  grain(t);
+}
+
+window.NFRAMES=NFRAMES;
+window.setFrame=f=>draw(f/FPS);
+window.grab=()=>cv.toDataURL('image/png');
+Promise.all([
+  document.fonts.load("700 100px ArchivoB"),
+  document.fonts.load("400 40px ArchivoR")
+]).then(()=>document.fonts.ready).then(()=>{ draw(0); window.__ready=true; });
+</script>
