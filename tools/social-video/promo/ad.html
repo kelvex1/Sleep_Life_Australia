@@ -66,10 +66,14 @@ function bg(t){
   g2.addColorStop(0,'rgba(24,120,168,0.34)'); g2.addColorStop(1,'rgba(24,120,168,0)');
   x.fillStyle=g2; x.fillRect(0,0,W,H);
   // a slow drift so the field is never static
-  const d=Math.sin(t*0.5)*40;
+  const d=Math.sin(t*0.5)*140;
   const g3=x.createRadialGradient(W*0.5+d,H*1.06,0,W*0.5+d,H*1.06,W*0.8);
-  g3.addColorStop(0,'rgba(232,86,28,0.20)'); g3.addColorStop(1,'rgba(232,86,28,0)');
+  g3.addColorStop(0,'rgba(232,86,28,0.24)'); g3.addColorStop(1,'rgba(232,86,28,0)');
   x.fillStyle=g3; x.fillRect(0,0,W,H);
+  const dy=Math.cos(t*0.37)*180;
+  const g4=x.createRadialGradient(W*0.12,H*0.16+dy,0,W*0.12,H*0.16+dy,W*0.7);
+  g4.addColorStop(0,'rgba(24,120,168,0.20)'); g4.addColorStop(1,'rgba(24,120,168,0)');
+  x.fillStyle=g4; x.fillRect(0,0,W,H);
 }
 
 function track(s,txt,px,tr){
@@ -147,7 +151,7 @@ function grid(t){
   });
   // the right jobs arrive
   BIG.forEach((s,i)=>{
-    const st=11.5+i*0.16;
+    const st=11.22+i*0.15;
     const a=outQ(seg(t,st,st+0.52));
     if(a<=0.01) return;
     const fade=1-seg(t,18.4,19.0);
@@ -163,6 +167,13 @@ function grid(t){
     x.strokeStyle='rgba(232,51,28,0.85)'; x.lineWidth=3; x.stroke();
     x.fillStyle=WHT; x.font='700 '+(s.w>2?60:48)+'px ArchivoB';
     const m=money(s.v); x.fillText(m,(pw-x.measureText(m).width)/2,ph/2+18);
+    const sw=((t-11.2)*0.30+i*0.05)%1, bc=(-0.35+1.7*sw)*(pw+ph);
+    const sg=x.createLinearGradient(bc-pw*0.5,0,bc+pw*0.5,ph);
+    sg.addColorStop(0,'rgba(255,236,224,0)');
+    sg.addColorStop(0.5,'rgba(255,236,224,0.16)');
+    sg.addColorStop(1,'rgba(255,236,224,0)');
+    roundRect(0,0,pw,ph,16); x.save(); x.clip();
+    x.globalCompositeOperation='lighter'; x.fillStyle=sg; x.fillRect(0,0,pw,ph); x.restore();
     x.restore();
   });
 }
@@ -183,7 +194,7 @@ function readout(t){
   const app=outC(seg(t,4.2,4.8)), fade=1-seg(t,18.4,19.0);
   if(app<=0.01) return;
   // jobs / hours / revenue, counting to the "before" then to the "after"
-  const p1=smooth(seg(t,4.2,7.6)), p2=smooth(seg(t,11.5,13.2));
+  const p1=smooth(seg(t,4.2,7.6)), p2=smooth(seg(t,11.25,13.0));
   const jobs=Math.round(24*p1-(24-6)*p2);
   const hours=Math.round(58*p1-(58-31)*p2);
   const rev=Math.round(4180*p1+(14600-4180)*p2);
@@ -194,7 +205,7 @@ function readout(t){
   };
   box(96,'JOBS',String(jobs),WHT);
   box(340,'HOURS',String(hours),WHT);
-  box(640,'BANKED',money(rev),seg(t,11.5,12.1)>0?RED:WHT);
+  box(640,'BANKED',money(rev),seg(t,11.25,11.9)>0?RED:WHT);
   // the bar that barely moves, then does
   const bx=96,by=1760,bw=W-192,bh=14;
   x.save(); x.globalAlpha=app*fade;
